@@ -7,7 +7,7 @@
 This project provides a complete local RAG system that can process PDF, text, and image documents using local Ollama AI models. The system features:
 
 - **Hybrid RAG Architecture**: LangChain agents orchestrating LlamaIndex document indexing
-- **Local AI Models**: Ollama integration with `llama2` and `nomic-embed-text`
+- **Local AI Models**: Ollama integration with `llama3.2:latest` and `embeddinggemma:latest`
 - **Vector Database**: PostgreSQL with pgvector extension for embeddings
 - **Memory Management**: Redis-backed conversation memory and caching
 - **Document Processing**: Multi-format support (PDF, text, images with OCR)
@@ -33,8 +33,8 @@ This project provides a complete local RAG system that can process PDF, text, an
                     │   Ollama        │
                     │   Local Models  │
                     │                 │
-                    │ • llama2        │
-                    │ • nomic-embed   │
+                    │ • llama3.2       │
+                    │ • embeddinggemma│
                     └─────────────────┘
                                  │
                     ┌─────────────────┐
@@ -53,7 +53,7 @@ This project provides a complete local RAG system that can process PDF, text, an
 - Python 3.11+
 - Docker 24.0+
 - Terraform 1.5.0+
-- Ollama with models: `llama2`, `nomic-embed-text`
+- Ollama with models: `llama3.2:latest`, `embeddinggemma:latest`
 
 ### Installation
 
@@ -167,13 +167,13 @@ Supported formats:
 ### Ollama Models
 
 Required models:
-- `llama2` - Primary generation model
-- `nomic-embed-text` - Text embeddings
+- `llama3.2:latest` - Primary generation model (latest Llama 3.2)
+- `embeddinggemma:latest` - Text embeddings (Google's EmbeddingGemma, 768 dimensions)
 
 Install with:
 ```bash
-ollama pull llama2
-ollama pull nomic-embed-text
+ollama pull llama3.2:latest
+ollama pull embeddinggemma:latest
 ```
 
 ## 🧪 Testing

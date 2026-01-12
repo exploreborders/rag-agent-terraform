@@ -7,7 +7,7 @@ This document outlines the complete implementation plan for the **rag-agent-terr
 ### 🎯 **Project Specifications**
 - **Infrastructure**: Terraform with Docker provider managing local containers
 - **RAG Framework**: Hybrid LangChain (agent orchestration) + LlamaIndex (document indexing)
-- **AI Provider**: Existing Ollama installation with local models (llama2, nomic-embed-text)
+- **AI Provider**: Existing Ollama installation with local models (llama3.2:latest, embeddinggemma:latest)
 - **Document Support**: PDF, text, and image processing with OCR
 - **Database**: PostgreSQL with pgvector extension for embeddings
 - **Cache**: Redis for session management and agent memory
@@ -142,7 +142,7 @@ rag-agent-terraform/
 
 ### **Ollama Integration**
 - **Local Models**: Connect to existing Ollama instance
-- **Model Selection**: llama2 (generation), nomic-embed-text (embeddings)
+- **Model Selection**: llama3.2:latest (generation), embeddinggemma:latest (embeddings)
 - **Fallback**: Graceful degradation if models unavailable
 
 ### **Database Design**
@@ -161,8 +161,8 @@ rag-agent-terraform/
 - [ ] **GitHub Account**: Repository and CI/CD
 
 ### **Ollama Models Required**
-- [x] `llama2`: Primary generation model
-- [x] `nomic-embed-text`: Text embeddings
+- [x] `llama3.2:latest`: Primary generation model
+- [x] `embeddinggemma:latest`: Text embeddings
 - [ ] `llava`: Image understanding (optional)
 
 ### **Python Dependencies**

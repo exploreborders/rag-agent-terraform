@@ -372,8 +372,8 @@ class Settings(BaseSettings):
 
     # Ollama
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "llama2"
-    ollama_embed_model: str = "nomic-embed-text"
+    ollama_model: str = "llama3.2:latest"
+    ollama_embed_model: str = "embeddinggemma:latest"
 
     # Security
     secret_key: str
