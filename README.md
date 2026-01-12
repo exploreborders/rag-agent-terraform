@@ -26,17 +26,17 @@ This project delivers a complete, self-contained RAG system that processes docum
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    FastAPI Application                       │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                RAG Agent Core                       │    │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │    │
-│  │  │ Document    │  │  Vector     │  │  Ollama     │  │    │
-│  │  │ Processing  │  │  Store      │  │  Client     │  │    │
-│  │  │ • PDF/Text  │  │  • pgvector │  │  • llama3.2  │  │    │
-│  │  │ • Chunking  │  │  • Cosine   │  │  • Embeddings│  │    │
-│  │  │ • OCR       │  │  • Search   │  │  • Local AI  │  │    │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘  │    │
-│  └─────────────────────────────────────────────────────┘    │
+│                    FastAPI Application                      │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │                RAG Agent Core                        │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  │   │
+│  │  │ Document    │  │  Vector     │  │  Ollama      │  │   │
+│  │  │ Processing  │  │  Store      │  │  Client      │  │   │
+│  │  │ • PDF/Text  │  │  • pgvector │  │  • llama3.2  │  │   │
+│  │  │ • Chunking  │  │  • Cosine   │  │  • Embeddings│  │   │
+│  │  │ • OCR       │  │  • Search   │  │  • Local AI  │  │   │
+│  │  └─────────────┘  └─────────────┘  └──────────────┘  │   │
+│  └──────────────────────────────────────────────────────┘   │
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │                Infrastructure                       │    │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │    │
