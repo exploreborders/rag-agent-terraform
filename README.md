@@ -35,6 +35,7 @@ This project provides a complete local RAG system that can process PDF, text, an
                     │                 │
                     │ • llama3.2       │
                     │ • embeddinggemma│
+                    │ • devstral-small-2│
                     └─────────────────┘
                                  │
                     ┌─────────────────┐
@@ -170,10 +171,15 @@ Required models:
 - `llama3.2:latest` - Primary generation model (latest Llama 3.2)
 - `embeddinggemma:latest` - Text embeddings (Google's EmbeddingGemma, 768 dimensions)
 
+Optional models:
+- `devstral-small-2:latest` - Image understanding and vision capabilities
+
 Install with:
 ```bash
 ollama pull llama3.2:latest
 ollama pull embeddinggemma:latest
+# Optional: for image processing
+ollama pull devstral-small-2:latest
 ```
 
 ## 🧪 Testing

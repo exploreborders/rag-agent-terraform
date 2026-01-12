@@ -163,7 +163,7 @@ rag-agent-terraform/
 ### **Ollama Models Required**
 - [x] `llama3.2:latest`: Primary generation model
 - [x] `embeddinggemma:latest`: Text embeddings
-- [ ] `llava`: Image understanding (optional)
+- [ ] `devstral-small-2:latest`: Image understanding (optional)
 
 ### **Python Dependencies**
 ```
