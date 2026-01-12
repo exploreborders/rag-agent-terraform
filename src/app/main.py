@@ -3,24 +3,23 @@
 import logging
 import time
 from contextlib import asynccontextmanager
-from typing import Dict, List, Optional, Any
-from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Query
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
 import structlog
+from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.document_loader import DocumentProcessingError, UnsupportedFileTypeError
 from app.models import (
+    DocumentResponse,
+    ErrorResponse,
+    HealthStatus,
     QueryRequest,
     QueryResponse,
-    DocumentResponse,
-    HealthStatus,
-    ErrorResponse,
 )
 from app.rag_agent import RAGAgent, RAGAgentError
-from app.document_loader import DocumentProcessingError, UnsupportedFileTypeError
 
 # Configure structured logging
 logging.basicConfig(level=getattr(logging, settings.log_level.upper()))

@@ -1,24 +1,22 @@
 """Hybrid RAG agent combining LangChain orchestration with LlamaIndex indexing."""
 
-import asyncio
 import hashlib
 import logging
-from typing import Dict, List, Optional, Any, AsyncGenerator
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from app.config import settings
-from app.ollama_client import OllamaClient, OllamaClientError
-from app.vector_store import VectorStore, VectorStoreError
-from app.redis_memory import AgentMemory, RedisMemoryError
-from app.document_loader import DocumentLoader, DocumentProcessingError
+from app.document_loader import DocumentLoader
 from app.models import (
-    QueryRequest,
-    QueryResponse,
-    QuerySource,
     DocumentResponse,
     HealthStatus,
-    ErrorResponse,
+    OllamaGenerateRequest,
+    QueryResponse,
+    QuerySource,
 )
+from app.ollama_client import OllamaClient
+from app.redis_memory import AgentMemory
+from app.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -317,9 +315,11 @@ Answer the user's question based on the context above. Be concise but comprehens
                 query=query,
                 answer=answer,
                 sources=sources,
-                confidence_score=sum(s.similarity_score for s in sources) / len(sources)
-                if sources
-                else 0.0,
+                confidence_score=(
+                    sum(s.similarity_score for s in sources) / len(sources)
+                    if sources
+                    else 0.0
+                ),
                 processing_time=processing_time,
                 total_sources=len(sources),
             )

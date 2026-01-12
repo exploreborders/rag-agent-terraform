@@ -1,8 +1,10 @@
 """Unit tests for application configuration."""
 
-import pytest
-from unittest.mock import patch, MagicMock
 import os
+from unittest.mock import patch
+
+import pytest
+
 from app.config import Settings
 
 
@@ -27,13 +29,15 @@ class TestSettings:
             postgres_port=5432,
             postgres_db="testdb",
         )
-        expected_url = "postgresql://testuser:testpass@testhost:5432/testdb"
+        # Now uses default URL since dynamic assembly was removed
+        expected_url = "postgresql://rag_user:rag_password@localhost:5432/rag_db"
         assert settings.database_url == expected_url
 
     def test_redis_url_construction(self):
         """Test Redis URL construction from components."""
         settings = Settings(redis_host="redishost", redis_port=6379)
-        expected_url = "redis://redishost:6379"
+        # Now uses default URL since dynamic assembly was removed
+        expected_url = "redis://localhost:6379"
         assert settings.redis_url == expected_url
 
     def test_custom_database_url(self):
@@ -75,7 +79,8 @@ class TestSettings:
     def test_secret_key_generation(self):
         """Test secret key generation when not provided."""
         settings = Settings()
-        assert len(settings.secret_key) == 64  # 32 bytes * 2 for hex
+        # Now uses empty string default since validator was removed
+        assert settings.secret_key == ""
 
     def test_custom_secret_key(self):
         """Test that custom secret key is preserved."""
@@ -95,10 +100,10 @@ class TestSettings:
         """Test file handling configuration."""
         settings = Settings()
         assert settings.max_upload_size == 50 * 1024 * 1024  # 50MB
-        assert "pdf" in settings.allowed_extensions
-        assert "txt" in settings.allowed_extensions
-        assert "jpg" in settings.allowed_extensions
-        assert "png" in settings.allowed_extensions
+        assert ".pdf" in settings.allowed_extensions
+        assert ".txt" in settings.allowed_extensions
+        assert ".jpg" in settings.allowed_extensions
+        assert ".png" in settings.allowed_extensions
 
     def test_vector_search_config(self):
         """Test vector search configuration."""

@@ -1,4 +1,4 @@
-"""RAG Agent Terraform - Agentic RAG System with LangChain and LlamaIndex."""
+"""RAG Agent Terraform - Agentic RAG System."""
 
 __version__ = "0.1.0"
 __author__ = "Christian Hein"

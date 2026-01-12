@@ -6,8 +6,8 @@ can process and understand when answering questions about code.
 """
 
 import math
-from typing import List, Dict, Optional, Union
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Union
 
 
 @dataclass

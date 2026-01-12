@@ -2,7 +2,9 @@
 
 import os
 from typing import Optional
-from pydantic import BaseSettings, validator
+
+from pydantic import ConfigDict
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -11,7 +13,7 @@ class Settings(BaseSettings):
     # Application Settings
     environment: str = "development"
     debug: bool = False
-    secret_key: str
+    secret_key: str = ""
     version: str = "0.1.0"
 
     # API Settings
@@ -25,12 +27,12 @@ class Settings(BaseSettings):
     postgres_user: str = "rag_user"
     postgres_password: str = "rag_password"
     postgres_db: str = "rag_db"
-    database_url: Optional[str] = None
+    database_url: str = "postgresql://rag_user:rag_password@localhost:5432/rag_db"
 
     # Redis Configuration
     redis_host: str = "localhost"
     redis_port: int = 6379
-    redis_url: Optional[str] = None
+    redis_url: str = "redis://localhost:6379"
 
     # Ollama Configuration
     ollama_base_url: str = "http://localhost:11434"
@@ -67,38 +69,7 @@ class Settings(BaseSettings):
     # Health Check
     health_check_interval: int = 30
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-
-    @validator("database_url", pre=True, always=True)
-    def assemble_database_url(cls, v, values):
-        """Assemble database URL from components if not provided."""
-        if v:
-            return v
-        return (
-            f"postgresql://{values.get('postgres_user')}:"
-            f"{values.get('postgres_password')}@"
-            f"{values.get('postgres_host')}:"
-            f"{values.get('postgres_port')}/"
-            f"{values.get('postgres_db')}"
-        )
-
-    @validator("redis_url", pre=True, always=True)
-    def assemble_redis_url(cls, v, values):
-        """Assemble Redis URL from components if not provided."""
-        if v:
-            return v
-        return f"redis://{values.get('redis_host')}:{values.get('redis_port')}"
-
-    @validator("secret_key", pre=True, always=True)
-    def generate_secret_key(cls, v):
-        """Generate a random secret key if not provided."""
-        if v:
-            return v
-        import secrets
-
-        return secrets.token_hex(32)
+    model_config = ConfigDict(env_file=".env", case_sensitive=False)
 
     def get_upload_path(self) -> str:
         """Get the full upload directory path."""

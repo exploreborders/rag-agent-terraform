@@ -2,13 +2,14 @@
 
 import asyncio
 import json
-from typing import Dict, List, Optional, Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Dict, List, Optional
+
 import httpx
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
 
 from app.config import settings
@@ -139,7 +140,9 @@ class OllamaClient:
 
     async def embed(self, request: OllamaEmbedRequest) -> OllamaEmbedResponse:
         """Generate embeddings for text."""
-        data = await self._make_request("POST", "/api/embeddings", json=request.dict())
+        data = await self._make_request(
+            "POST", "/api/embeddings", json=request.model_dump()
+        )
         return OllamaEmbedResponse(**data)
 
     async def embed_batch(
@@ -169,7 +172,9 @@ class OllamaClient:
 
     async def generate(self, request: OllamaGenerateRequest) -> OllamaGenerateResponse:
         """Generate text using a language model."""
-        data = await self._make_request("POST", "/api/generate", json=request.dict())
+        data = await self._make_request(
+            "POST", "/api/generate", json=request.model_dump()
+        )
         return OllamaGenerateResponse(**data)
 
     async def generate_stream(
@@ -179,7 +184,7 @@ class OllamaClient:
         request.stream = True
 
         async with self._client.stream(
-            "POST", "/api/generate", json=request.dict()
+            "POST", "/api/generate", json=request.model_dump()
         ) as response:
             response.raise_for_status()
             async for line in response.aiter_lines():

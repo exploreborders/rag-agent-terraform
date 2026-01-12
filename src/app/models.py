@@ -1,8 +1,9 @@
 """Pydantic data models for the RAG Agent API."""
 
-from typing import Dict, List, Optional, Any, Union
-from pydantic import BaseModel, Field, validator
 import re
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class DocumentMetadata(BaseModel):
@@ -43,7 +44,8 @@ class QueryRequest(BaseModel):
         default_factory=dict, description="Additional search filters"
     )
 
-    @validator("query")
+    @field_validator("query")
+    @classmethod
     def validate_query(cls, v):
         """Validate query content."""
         if not v.strip():

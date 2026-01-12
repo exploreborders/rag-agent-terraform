@@ -1,11 +1,11 @@
 """Redis-backed agent memory and caching."""
 
-import json
 import logging
-from typing import Dict, List, Optional, Any, Union
-from datetime import datetime, timedelta
-import redis.asyncio as redis
 import pickle
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+import redis.asyncio as redis
 
 from app.config import settings
 

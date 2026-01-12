@@ -1,11 +1,9 @@
 """PostgreSQL vector store operations with pgvector."""
 
-import asyncio
 import logging
-from typing import List, Dict, Optional, Any, Tuple
-from contextlib import asynccontextmanager
+from typing import Any, Dict, List, Optional
+
 import asyncpg
-import numpy as np
 from pgvector.asyncpg import register_vector
 
 from app.config import settings
@@ -89,7 +87,8 @@ class VectorStore:
             await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
 
             # Create documents table
-            await conn.execute("""
+            await conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS documents (
                     id TEXT PRIMARY KEY,
                     filename TEXT NOT NULL,
@@ -101,10 +100,12 @@ class VectorStore:
                     checksum TEXT,
                     metadata JSONB DEFAULT '{}'
                 );
-            """)
+            """
+            )
 
             # Create document chunks table with vector column
-            await conn.execute(f"""
+            await conn.execute(
+                f"""
                 CREATE TABLE IF NOT EXISTS document_chunks (
                     id TEXT PRIMARY KEY,
                     document_id TEXT REFERENCES documents(id) ON DELETE CASCADE,
@@ -115,19 +116,24 @@ class VectorStore:
                     metadata JSONB DEFAULT '{{}}',
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
                 );
-            """)
+            """
+            )
 
             # Create indexes for better performance
-            await conn.execute("""
+            await conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_document_chunks_document_id
                 ON document_chunks(document_id);
-            """)
+            """
+            )
 
-            await conn.execute("""
+            await conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding
                 ON document_chunks USING ivfflat (embedding vector_cosine_ops)
                 WITH (lists = 100);
-            """)
+            """
+            )
 
             logger.info("Database schema initialized successfully")
 

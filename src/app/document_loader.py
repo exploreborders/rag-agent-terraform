@@ -1,14 +1,14 @@
 """Document processing pipeline for PDF, text, and image files."""
 
-import os
 import hashlib
 import logging
-from typing import Dict, List, Optional, Any, Tuple, BinaryIO
+from datetime import datetime
 from pathlib import Path
+from typing import Any, BinaryIO, Dict, List, Optional, Tuple
+
 import fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
-from datetime import datetime
 
 from app.config import settings
 

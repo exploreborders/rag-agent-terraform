@@ -1,10 +1,12 @@
 """Unit tests for document loader."""
 
-import pytest
-from unittest.mock import patch, MagicMock
-from pathlib import Path
-import tempfile
 import shutil
+import tempfile
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from app.document_loader import (
     DocumentLoader,
     DocumentProcessingError,
@@ -108,7 +110,7 @@ class TestDocumentLoader:
         mock_doc = MagicMock()
         mock_page = MagicMock()
         mock_page.get_text.return_value = "Page content"
-        mock_doc.__len__ = lambda: 2
+        mock_doc.__len__.return_value = 2
         mock_doc.load_page.return_value = mock_page
         mock_fitz.open.return_value = mock_doc
 
