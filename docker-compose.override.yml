@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # Override for development with hot reload and debugging
+  app:
+    build:
+      context: ..
+      dockerfile: docker/app/Dockerfile
+      target: development
+    volumes:
+      - ../src:/app/src
+      - ../data:/app/data
+    environment:
+      - DEBUG=true
+      - API_RELOAD=true
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    command: python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --log-level info
+
+  # Development database with persistent data
+  postgres:
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Development Redis with persistence
+  redis:
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf
+
+volumes:
+  postgres_data:
+  redis_data:
