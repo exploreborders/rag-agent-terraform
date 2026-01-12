@@ -1,5 +1,6 @@
 """PostgreSQL vector store operations with pgvector."""
 
+import json
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -142,14 +143,43 @@ class VectorStore:
 
         Args:
             document_id: Unique document identifier
-            metadata: Document metadata
+            metadata: Document metadata dictionary
 
         Returns:
             Document ID
         """
+        logger.info(
+            f"Storing document {document_id} with metadata keys: {list(metadata.keys())}"
+        )
         await self._ensure_connection()
 
         async with self._pool.acquire() as conn:
+            # Convert upload_time string to datetime if needed
+            upload_time = metadata.get("upload_time")
+            if isinstance(upload_time, str):
+                from datetime import datetime
+
+                upload_time = datetime.fromisoformat(upload_time.replace("Z", "+00:00"))
+
+            import json
+
+            params = (
+                document_id,
+                metadata.get("filename"),
+                metadata.get("content_type"),
+                metadata.get("size"),
+                upload_time,
+                metadata.get("page_count") or 0,  # Default to 0 if None
+                metadata.get("word_count") or 0,  # Default to 0 if None
+                metadata.get("checksum"),
+                json.dumps(metadata.get("metadata", {})),  # Convert dict to JSON string
+            )
+            print(f"DEBUG: Executing query with {len(params)} parameters")
+            print(f"DEBUG: Parameter types: {[type(p).__name__ for p in params]}")
+            print(f"DEBUG: Parameter values: {params}")
+            print(f"DEBUG: metadata keys: {list(metadata.keys())}")
+            print(f"DEBUG: metadata.metadata: {metadata.get('metadata')}")
+
             await conn.execute(
                 """
                 INSERT INTO documents (id, filename, content_type, size, upload_time,
@@ -165,17 +195,7 @@ class VectorStore:
                     checksum = EXCLUDED.checksum,
                     metadata = EXCLUDED.metadata
             """,
-                (
-                    document_id,
-                    metadata.get("filename"),
-                    metadata.get("content_type"),
-                    metadata.get("size"),
-                    metadata.get("upload_time"),
-                    metadata.get("page_count"),
-                    metadata.get("word_count"),
-                    metadata.get("checksum"),
-                    metadata.get("metadata", {}),
-                ),
+                *params,  # Unpack the tuple
             )
 
         logger.info(f"Stored document metadata: {document_id}")
@@ -197,10 +217,9 @@ class VectorStore:
             chunk_data = []
             for chunk in chunks:
                 embedding = chunk.get("embedding")
-                if embedding and isinstance(embedding, list):
-                    embedding_str = f"[{','.join(map(str, embedding))}]"
-                else:
-                    embedding_str = None
+                # pgvector will handle the list conversion automatically
+                if not embedding or not isinstance(embedding, list):
+                    embedding = None
 
                 chunk_data.append(
                     (
@@ -209,12 +228,16 @@ class VectorStore:
                         chunk["content"],
                         chunk["chunk_index"],
                         chunk["total_chunks"],
-                        embedding_str,
-                        chunk.get("metadata", {}),
+                        embedding,  # Pass list directly - pgvector handles conversion
+                        json.dumps(chunk.get("metadata", {})),
                     )
                 )
 
             # Bulk insert chunks
+            logger.info(f"Bulk inserting {len(chunk_data)} chunks")
+            logger.info(
+                f"First chunk data: {chunk_data[0] if chunk_data else 'No chunks'}"
+            )
             await conn.executemany(
                 """
                 INSERT INTO document_chunks (id, document_id, content, chunk_index,
@@ -251,9 +274,6 @@ class VectorStore:
         """
         await self._ensure_connection()
 
-        # Convert query vector to pgvector format
-        query_vec = f"[{','.join(map(str, query_vector))}]"
-
         # Build query
         base_query = """
             SELECT
@@ -272,7 +292,11 @@ class VectorStore:
             WHERE dc.embedding IS NOT NULL
         """
 
-        params = [query_vec]
+        # Convert to numpy array for pgvector compatibility
+        import numpy as np
+
+        query_vec_array = np.array(query_vector, dtype=np.float32)
+        params = [query_vec_array]
         param_count = 1
 
         # Add filters
@@ -297,11 +321,16 @@ class VectorStore:
             params.append(threshold)
 
         # Add ordering and limit
-        base_query += " ORDER BY dc.embedding <=> $1 LIMIT $2"
+        param_count += 1
+        base_query += f" ORDER BY dc.embedding <=> $1 LIMIT ${param_count}"
         params.append(top_k)
 
         async with self._pool.acquire() as conn:
+            logger.info(f"Executing similarity search query with {len(params)} params")
+            logger.info(f"Query: {base_query}")
+            logger.info(f"Params: {[type(p).__name__ for p in params]}")
             rows = await conn.fetch(base_query, *params)
+            logger.info(f"Query returned {len(rows)} rows")
 
         results = []
         for row in rows:

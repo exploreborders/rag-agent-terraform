@@ -3,7 +3,7 @@
 import os
 from typing import Optional
 
-from pydantic import ConfigDict
+from pydantic import ConfigDict, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -42,9 +42,17 @@ class Settings(BaseSettings):
 
     # File Handling
     max_upload_size: int = 50 * 1024 * 1024  # 50MB
-    allowed_extensions: list[str] = [".pdf", ".txt", ".jpg", ".jpeg", ".png"]
+    allowed_extensions: str = ".pdf,.txt,.jpg,.jpeg,.png"
     upload_dir: str = "data/uploads"
     processed_dir: str = "data/processed"
+
+    @property
+    def allowed_extensions_list(self) -> list[str]:
+        """Get allowed extensions as a list."""
+        extensions = [
+            ext.strip() for ext in self.allowed_extensions.split(",") if ext.strip()
+        ]
+        return [f".{ext}" if not ext.startswith(".") else ext for ext in extensions]
 
     # Document Processing
     chunk_size: int = 1000

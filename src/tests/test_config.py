@@ -100,10 +100,10 @@ class TestSettings:
         """Test file handling configuration."""
         settings = Settings()
         assert settings.max_upload_size == 50 * 1024 * 1024  # 50MB
-        assert ".pdf" in settings.allowed_extensions
-        assert ".txt" in settings.allowed_extensions
-        assert ".jpg" in settings.allowed_extensions
-        assert ".png" in settings.allowed_extensions
+        assert ".pdf" in settings.allowed_extensions_list
+        assert ".txt" in settings.allowed_extensions_list
+        assert ".jpg" in settings.allowed_extensions_list
+        assert ".png" in settings.allowed_extensions_list
 
     def test_vector_search_config(self):
         """Test vector search configuration."""

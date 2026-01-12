@@ -19,7 +19,7 @@ locals {
   redis_url    = "redis://${local.redis_container_name}:${var.redis_port}"
 
   # Docker image names
-  postgres_image = "postgres:${var.postgres_version}"
+  postgres_image = "pgvector/pgvector:pg15"
   redis_image    = "redis:${var.redis_version}"
   app_image      = "${local.project_name}:${var.app_image_tag}"
 

@@ -1,0 +1,96 @@
+{
+  "timestamp": 1768259540.717821,
+  "test_file": "../data/test_queries.json",
+  "summary": {
+    "total_queries": 8,
+    "success_rate": 1.0,
+    "avg_response_time": 3.465543746948242,
+    "median_response_time": 3.308228015899658,
+    "min_response_time": 1.1299059391021729,
+    "max_response_time": 6.689439296722412,
+    "avg_answer_length": 828.875,
+    "avg_source_count": 0
+  },
+  "individual_results": [
+    {
+      "query": "What is machine learning?",
+      "success": true,
+      "response_time": 4.175281047821045,
+      "answer_length": 996,
+      "source_count": 0,
+      "keyword_matches": 3,
+      "source_accuracy": 0.0,
+      "error": null
+    },
+    {
+      "query": "What are the types of machine learning?",
+      "success": true,
+      "response_time": 3.5413897037506104,
+      "answer_length": 843,
+      "source_count": 0,
+      "keyword_matches": 3,
+      "source_accuracy": 0.0,
+      "error": null
+    },
+    {
+      "query": "What are the core components of the system?",
+      "success": true,
+      "response_time": 1.1299059391021729,
+      "answer_length": 217,
+      "source_count": 0,
+      "keyword_matches": 0,
+      "source_accuracy": 0.0,
+      "error": null
+    },
+    {
+      "query": "How does the data flow work?",
+      "success": true,
+      "response_time": 1.7617199420928955,
+      "answer_length": 351,
+      "source_count": 0,
+      "keyword_matches": 0,
+      "source_accuracy": 0.0,
+      "error": null
+    },
+    {
+      "query": "What are the applications of machine learning?",
+      "success": true,
+      "response_time": 6.689439296722412,
+      "answer_length": 1701,
+      "source_count": 0,
+      "keyword_matches": 2,
+      "source_accuracy": 0.0,
+      "error": null
+    },
+    {
+      "query": "What is the difference between supervised and unsupervised learning?",
+      "success": true,
+      "response_time": 4.6276679039001465,
+      "answer_length": 1147,
+      "source_count": 0,
+      "keyword_matches": 3,
+      "source_accuracy": 0.0,
+      "error": null
+    },
+    {
+      "query": "How does the system handle document processing?",
+      "success": true,
+      "response_time": 3.075066328048706,
+      "answer_length": 714,
+      "source_count": 0,
+      "keyword_matches": 1,
+      "source_accuracy": 0.0,
+      "error": null
+    },
+    {
+      "query": "What database technology is used for vector storage?",
+      "success": true,
+      "response_time": 2.723879814147949,
+      "answer_length": 662,
+      "source_count": 0,
+      "keyword_matches": 0,
+      "source_accuracy": 0.0,
+      "error": null
+    }
+  ]
+}

@@ -62,7 +62,7 @@ infra-plan: ## Plan Terraform changes
 
 infra-apply: ## Apply Terraform changes
 	@echo "Applying Terraform changes..."
-	cd terraform && terraform apply
+	cd terraform && terraform apply -auto-approve
 
 infra-destroy: ## Destroy Terraform infrastructure
 	@echo "Destroying Terraform infrastructure..."
@@ -90,10 +90,10 @@ docker-logs: ## Show Docker logs
 	docker-compose logs -f
 
 # Deployment
-deploy: infra-apply docker-build docker-up ## Full deployment (infrastructure + containers)
+deploy: infra-apply ## Full deployment (infrastructure + containers)
 	@echo "Deployment complete. Services starting..."
 
-destroy: docker-down infra-destroy ## Full teardown
+destroy: infra-destroy ## Full teardown
 	@echo "Teardown complete."
 
 # Development utilities
@@ -148,5 +148,5 @@ ci: check test ## Run CI checks (lint + test)
 	@echo "CI checks passed!"
 
 # Development workflow
-workflow-dev: setup install infra-init infra-apply deploy dev ## Complete development setup
+workflow-dev: setup install infra-init deploy dev ## Complete development setup
 	@echo "Development environment ready!"

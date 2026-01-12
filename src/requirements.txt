@@ -4,6 +4,7 @@ langchain==0.0.350
 llama-index==0.9.15
 pgvector==0.2.4
 psycopg2-binary==2.9.9
+asyncpg==0.29.0
 redis==5.0.1
 python-multipart==0.0.6
 pymupdf==1.23.6

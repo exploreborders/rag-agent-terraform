@@ -1,7 +1,7 @@
 """Pydantic data models for the RAG Agent API."""
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -152,7 +152,7 @@ class OllamaModelInfo(BaseModel):
     """Information about available Ollama models."""
 
     name: str
-    size: str
+    size: Union[str, int]
     modified_at: str
     digest: str
 

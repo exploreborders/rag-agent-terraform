@@ -143,6 +143,8 @@ class OllamaClient:
         data = await self._make_request(
             "POST", "/api/embeddings", json=request.model_dump()
         )
+        # Add model to response since Ollama API doesn't include it
+        data["model"] = request.model
         return OllamaEmbedResponse(**data)
 
     async def embed_batch(
