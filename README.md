@@ -29,14 +29,14 @@ This project provides a complete local RAG system that can process PDF, text, an
          │                       │                       │
          └───────────────────────┼───────────────────────┘
                                  │
-                    ┌─────────────────┐
-                    │   Ollama        │
-                    │   Local Models  │
-                    │                 │
-                    │ • llama3.2       │
-                    │ • embeddinggemma│
+                    ┌───────────────────┐
+                    │   Ollama          │
+                    │   Local Models    │
+                    │                   │
+                    │ • llama3.2        │
+                    │ • embeddinggemma  │
                     │ • devstral-small-2│
-                    └─────────────────┘
+                    └───────────────────┘
                                  │
                     ┌─────────────────┐
                     │ Infrastructure  │
