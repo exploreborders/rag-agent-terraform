@@ -415,8 +415,14 @@ class VectorStore:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
                 """
-                SELECT * FROM documents
-                ORDER BY upload_time DESC
+                SELECT
+                    d.*,
+                    COUNT(dc.id) as chunks_count
+                FROM documents d
+                LEFT JOIN document_chunks dc ON d.id = dc.document_id
+                GROUP BY d.id, d.filename, d.content_type, d.size, d.upload_time,
+                         d.page_count, d.word_count, d.checksum, d.metadata
+                ORDER BY d.upload_time DESC
                 LIMIT $1 OFFSET $2
             """,
                 limit,
@@ -431,7 +437,9 @@ class VectorStore:
                     "filename": row["filename"],
                     "content_type": row["content_type"],
                     "size": row["size"],
-                    "upload_time": row["upload_time"].isoformat(),
+                    "uploaded_at": row["upload_time"].isoformat(),
+                    "status": "completed",  # Documents in DB are successfully processed
+                    "chunks_count": int(row["chunks_count"]),
                     "page_count": row["page_count"],
                     "word_count": row["word_count"],
                     "checksum": row["checksum"],
