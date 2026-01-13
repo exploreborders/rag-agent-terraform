@@ -69,6 +69,22 @@ function App() {
     loadInitialData();
   }, []);
 
+  // Reload documents when refresh trigger changes
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      loadDocuments();
+    }
+  }, [refreshTrigger]);
+
+  const loadDocuments = async () => {
+    try {
+      const docs = await ApiService.getDocuments();
+      setDocuments(docs);
+    } catch (error) {
+      console.error('Failed to load documents:', error);
+    }
+  };
+
   const loadInitialData = async () => {
     try {
       const [docs, health, statsData] = await Promise.all([
@@ -178,7 +194,7 @@ function App() {
               <Grid item xs={12} sm={6} md={3}>
                 <Paper elevation={1} sx={{ p: 2, textAlign: 'center' }}>
                   <Memory color="info" sx={{ fontSize: 40, mb: 1 }} />
-                  <Typography variant="h4">{stats.average_response_time.toFixed(1)}s</Typography>
+                   <Typography variant="h4">{stats?.average_response_time?.toFixed(1) || 'N/A'}s</Typography>
                   <Typography variant="body2" color="text.secondary">Avg Response</Typography>
                 </Paper>
               </Grid>
