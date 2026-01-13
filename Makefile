@@ -30,6 +30,14 @@ test-unit: ## Run unit tests only
 	@echo "Running unit tests..."
 	source venv/bin/activate && cd src && python3.11 -m pytest tests/ -v -m "not integration"
 
+test-integration: ## Run integration tests with real databases
+	@echo "Running integration tests..."
+	source venv/bin/activate && python3.11 ../run_integration_tests.py
+
+test-integration-quick: ## Run quick integration test to verify setup
+	@echo "Running quick integration test..."
+	source venv/bin/activate && python3.11 ../run_integration_tests.py --quick
+
 test-integration: ## Run integration tests only
 	@echo "Running integration tests..."
 	source venv/bin/activate && cd src && python3.11 -m pytest tests/ -v -m "integration"

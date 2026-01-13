@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Union
 
 import asyncpg
 import numpy as np
-from pgvector.asyncpg import register_vector
 
 from app.config import settings
 
@@ -62,10 +61,7 @@ class VectorStore:
                 command_timeout=60,
             )
 
-            # Register pgvector extension
-            async with self._pool.acquire() as conn:
-                await register_vector(conn)
-                logger.info("Connected to PostgreSQL with pgvector support")
+            # Note: pgvector registration removed - using string format for vector storage
 
         except Exception as e:
             logger.error(f"Failed to connect to database: {e}")
@@ -221,14 +217,17 @@ class VectorStore:
             chunk_data = []
             for chunk in chunks:
                 embedding = chunk.get("embedding")
-                # Convert numpy arrays to lists for pgvector
+                # Convert to PostgreSQL vector string format for storage
                 if embedding is not None:
                     if hasattr(embedding, "tolist"):  # numpy array
                         embedding = embedding.tolist()
-                    elif not isinstance(embedding, list):
+                    if isinstance(embedding, list):
+                        # Convert to PostgreSQL vector string format: '[val1,val2,val3]'
+                        embedding = f"[{','.join(str(float(x)) for x in embedding)}]"
+                    elif not isinstance(embedding, str):
                         embedding = None
                 logger.info(
-                    f"Chunk embedding type: {type(embedding)}, sample: {str(embedding)[:100] if embedding else None}"
+                    f"Chunk embedding type: {type(embedding)}, sample: {str(embedding)[:100] if embedding is not None else None}"
                 )
 
                 chunk_data.append(
@@ -239,6 +238,18 @@ class VectorStore:
                         chunk["chunk_index"],
                         chunk["total_chunks"],
                         embedding,  # Pass as string for PostgreSQL vector type
+                        json.dumps(chunk.get("metadata", {})),
+                    )
+                )
+
+                chunk_data.append(
+                    (
+                        chunk["id"],
+                        chunk["document_id"],
+                        chunk["content"],
+                        chunk["chunk_index"],
+                        chunk["total_chunks"],
+                        embedding,  # Pass as numpy array for pgvector
                         json.dumps(chunk.get("metadata", {})),
                     )
                 )
@@ -302,7 +313,7 @@ class VectorStore:
             WHERE dc.embedding IS NOT NULL
         """
 
-        # Format query vector as PostgreSQL vector string for pgvector
+        # Convert query vector to list, then to PostgreSQL vector string format
         try:
             # Try to convert to list (works for both lists and numpy arrays)
             query_vec_list = list(query_vector)
