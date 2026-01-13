@@ -9,6 +9,9 @@ import {
   ApiError
 } from '../types/api';
 
+// Re-export for convenience
+export { ApiError };
+
 // Base API configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -18,25 +21,24 @@ const api = axios.create({
 });
 
 // Request interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response) {
-      // Server responded with error status
-      const apiError: ApiError = {
-        detail: error.response.data.detail || 'An error occurred',
-        status_code: error.response.status,
-      };
-      throw apiError;
-    } else if (error.request) {
-      // Network error
-      throw new Error('Network error - please check your connection');
-    } else {
-      // Something else happened
-      throw new Error('An unexpected error occurred');
+  api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response) {
+        // Server responded with error status
+        throw new ApiError(
+          error.response.data.detail || 'An error occurred',
+          error.response.status
+        );
+      } else if (error.request) {
+        // Network error
+        throw new Error('Network error - please check your connection');
+      } else {
+        // Something else happened
+        throw new Error('An unexpected error occurred');
+      }
     }
-  }
-);
+  );
 
 // API Service class
 export class ApiService {

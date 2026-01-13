@@ -1,6 +1,6 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { QueryResults } from '../components/QueryResults';
+import { render, screen } from '../../__tests__/test-utils';
+import { QueryResults } from '../QueryResults';
 
 describe('QueryResults', () => {
   it('renders no results message when no result provided', () => {

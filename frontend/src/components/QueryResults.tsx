@@ -13,6 +13,7 @@ import {
 import {
   ExpandMore,
   Info,
+  CheckCircle,
 } from '@mui/icons-material';
 import { QueryResponse } from '../types/api';
 

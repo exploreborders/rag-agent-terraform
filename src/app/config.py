@@ -60,7 +60,7 @@ class Settings(BaseSettings):
 
     # Vector Search
     vector_dimension: int = 768
-    similarity_threshold: float = 0.7
+    similarity_threshold: float = 0.4
     top_k_results: int = 5
     max_documents_per_query: int = 10
 

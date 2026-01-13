@@ -87,11 +87,22 @@ export const mockHealthStatus = {
 };
 
 export const mockStatsResponse = {
-  total_documents: 5,
-  total_chunks: 750,
-  total_queries: 25,
-  average_response_time: 1.3,
+  total_documents: 4,
+  total_chunks: 7,
+  total_queries: 42,
+  average_response_time: 1.2,
   uptime_seconds: 3600,
+  cache_stats: {
+    connected_clients: 2,
+    used_memory: 1162472,
+    total_connections_received: 191,
+    uptime_in_seconds: 5641,
+    keyspace_hits: 0,
+    keyspace_misses: 3,
+  },
+  ollama_available: true,
+  vector_store_healthy: true,
+  memory_healthy: true,
 };
 
 // Re-export everything
@@ -99,3 +110,12 @@ export * from '@testing-library/react';
 
 // Override render method
 export { customRender as render };
+
+// Dummy test to satisfy Jest requirement
+describe('test-utils', () => {
+  it('exports test utilities', () => {
+    expect(createMockFile).toBeDefined();
+    expect(mockApiService).toBeDefined();
+    expect(mockDocument).toBeDefined();
+  });
+});

@@ -1,5 +1,6 @@
 """FastAPI application for the RAG Agent system."""
 
+import io
 import logging
 import time
 from contextlib import asynccontextmanager
@@ -139,7 +140,7 @@ async def upload_document(
 
         # Save uploaded file
         file_path = agent.document_loader.save_uploaded_file(
-            type("FileObj", (), {"read": lambda: content})(), file.filename
+            io.BytesIO(content), file.filename
         )
 
         # Process document

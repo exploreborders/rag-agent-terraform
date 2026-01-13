@@ -1,6 +1,6 @@
 module.exports = {
   transformIgnorePatterns: [
-    'node_modules/(?!axios)/'
+    'node_modules/(?!axios)'
   ],
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
@@ -23,4 +23,9 @@ module.exports = {
       statements: 70,
     },
   },
+  transform: {
+    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
+    '^.+\\.m?js$': 'babel-jest',
+  },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 };

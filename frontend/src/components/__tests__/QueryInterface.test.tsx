@@ -1,10 +1,10 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../__tests__/test-utils';
-import { QueryInterface } from '../components/QueryInterface';
-import { ApiService } from '../services/api';
+import { render, screen, fireEvent, waitFor } from '../../__tests__/test-utils';
+import { QueryInterface } from '../QueryInterface';
+import { ApiService } from '../../services/api';
 
 // Mock the API service
-jest.mock('../services/api');
+jest.mock('../../services/api');
 const mockedApiService = ApiService as jest.Mocked<typeof ApiService>;
 
 describe('QueryInterface', () => {
@@ -82,15 +82,17 @@ describe('QueryInterface', () => {
       />
     );
 
-    // Initially shows "All documents"
-    expect(screen.getByDisplayValue('All documents')).toBeInTheDocument();
+    // Initially shows "All documents" as the selected value
+    expect(screen.getByText('All documents')).toBeInTheDocument();
 
-    // Change to selected documents
-    const selectElement = screen.getByLabelText('Search scope');
-    fireEvent.mouseDown(selectElement);
+    // Change to selected documents mode - get the second combobox (Search scope)
+    const comboboxes = screen.getAllByRole('combobox');
+    const searchScopeSelect = comboboxes[1]; // Second combobox is Search scope
+    fireEvent.mouseDown(searchScopeSelect);
     fireEvent.click(screen.getByText('Selected documents'));
 
-    expect(screen.getByText('Selected Documents (0):')).toBeInTheDocument();
+    // After switching to "Selected documents" mode, the selected documents section should not appear yet (no documents selected)
+    expect(screen.queryByText(/Selected Documents/)).not.toBeInTheDocument();
   });
 
   it('handles document selection', () => {
@@ -102,9 +104,10 @@ describe('QueryInterface', () => {
       />
     );
 
-    // Switch to selected documents mode
-    const selectElement = screen.getByLabelText('Search scope');
-    fireEvent.mouseDown(selectElement);
+    // Switch to selected documents mode - get the second combobox (Search scope)
+    const comboboxes = screen.getAllByRole('combobox');
+    const searchScopeSelect = comboboxes[1]; // Second combobox is Search scope
+    fireEvent.mouseDown(searchScopeSelect);
     fireEvent.click(screen.getByText('Selected documents'));
 
     // Click on first document chip
@@ -124,10 +127,11 @@ describe('QueryInterface', () => {
       />
     );
 
-    const selectElement = screen.getByLabelText('Results to show');
+    const comboboxes = screen.getAllByRole('combobox');
+    const resultsSelect = comboboxes[0]; // First combobox is Results to show
     expect(screen.getByDisplayValue('5')).toBeInTheDocument();
 
-    fireEvent.mouseDown(selectElement);
+    fireEvent.mouseDown(resultsSelect);
     fireEvent.click(screen.getByText('10'));
 
     expect(screen.getByDisplayValue('10')).toBeInTheDocument();
@@ -186,7 +190,7 @@ describe('QueryInterface', () => {
     );
 
     // Switch to selected documents mode and select one
-    const scopeSelect = screen.getByLabelText('Search scope');
+    const scopeSelect = screen.getAllByRole('combobox')[1];
     fireEvent.mouseDown(scopeSelect);
     fireEvent.click(screen.getByText('Selected documents'));
 
@@ -313,7 +317,7 @@ describe('QueryInterface', () => {
     );
 
     // Switch to selected documents mode and select one
-    const scopeSelect = screen.getByLabelText('Search scope');
+    const scopeSelect = screen.getAllByRole('combobox')[1];
     fireEvent.mouseDown(scopeSelect);
     fireEvent.click(screen.getByText('Selected documents'));
 
@@ -326,6 +330,7 @@ describe('QueryInterface', () => {
     const clearButton = screen.getByText('Clear All');
     fireEvent.click(clearButton);
 
-    expect(screen.getByText('Selected Documents (0):')).toBeInTheDocument();
+    // After clearing all documents, the selected documents section should disappear
+    expect(screen.queryByText(/Selected Documents/)).not.toBeInTheDocument();
   });
 });

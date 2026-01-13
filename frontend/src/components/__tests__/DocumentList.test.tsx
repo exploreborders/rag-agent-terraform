@@ -1,10 +1,10 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../__tests__/test-utils';
-import { DocumentList } from '../components/DocumentList';
-import { ApiService } from '../services/api';
+import { render, screen, fireEvent, waitFor } from '../../__tests__/test-utils';
+import { DocumentList } from '../DocumentList';
+import { ApiService } from '../../services/api';
 
 // Mock the API service
-jest.mock('../services/api');
+jest.mock('../../services/api');
 const mockedApiService = ApiService as jest.Mocked<typeof ApiService>;
 
 describe('DocumentList', () => {

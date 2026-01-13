@@ -107,6 +107,6 @@ class TestSettings:
         """Test vector search configuration."""
         settings = Settings()
         assert settings.vector_dimension == 768
-        assert settings.similarity_threshold == 0.7
+        assert settings.similarity_threshold == 0.4
         assert settings.top_k_results == 5
         assert settings.max_documents_per_query == 10

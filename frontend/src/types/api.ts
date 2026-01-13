@@ -46,9 +46,14 @@ export interface HealthStatus {
   };
 }
 
-export interface ApiError {
-  detail: string;
+export class ApiError extends Error {
   status_code?: number;
+
+  constructor(message: string, statusCode?: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status_code = statusCode;
+  }
 }
 
 export interface StatsResponse {

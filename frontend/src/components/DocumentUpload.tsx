@@ -10,7 +10,7 @@ import {
   Chip,
   Stack,
 } from '@mui/material';
-import { CloudUpload, InsertDriveFile, CheckCircle, Error } from '@mui/icons-material';
+import { CloudUpload, InsertDriveFile, CheckCircle, Error as ErrorIcon } from '@mui/icons-material';
 import { ApiService } from '../services/api';
 import { DocumentUploadResponse } from '../types/api';
 
@@ -177,7 +177,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
               <Alert
                 key={index}
                 severity={result.status === 'success' ? 'success' : 'error'}
-                icon={result.status === 'success' ? <CheckCircle /> : <Error />}
+                icon={result.status === 'success' ? <CheckCircle /> : <ErrorIcon />}
               >
                 <strong>{result.file.name}:</strong> {result.message}
               </Alert>

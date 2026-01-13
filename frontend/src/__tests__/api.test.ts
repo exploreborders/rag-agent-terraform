@@ -1,9 +1,26 @@
-import axios from 'axios';
+// Mock axios before importing anything that uses it
+jest.mock('axios', () => ({
+  create: jest.fn(() => ({
+    interceptors: {
+      response: {
+        use: jest.fn(),
+      },
+    },
+    get: jest.fn(),
+    post: jest.fn(),
+    delete: jest.fn(),
+  })),
+  isAxiosError: jest.fn(() => false),
+}));
+
 import { ApiService } from '../services/api';
 
-// Mock axios
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+// Import after mocking to get the mocked instance
+import * as apiModule from '../services/api';
+
+// Get the mocked axios instance
+const mockedAxios = require('axios');
+const mockApiInstance = mockedAxios.create.mock.results[0].value;
 
 describe('ApiService', () => {
   beforeEach(() => {
@@ -13,23 +30,31 @@ describe('ApiService', () => {
   describe('getHealth', () => {
     it('fetches health status successfully', async () => {
       const mockResponse = {
-        status: 'healthy',
+        status: 'healthy' as const,
         timestamp: '2024-01-13T10:00:00Z',
         version: '0.1.0',
         services: {
-          ollama: 'healthy',
-          vector_store: 'healthy',
-          redis: 'healthy',
+          ollama: 'healthy' as const,
+          vector_store: 'healthy' as const,
+          redis: 'healthy' as const,
         },
       };
 
-      mockedAxios.get.mockResolvedValueOnce({ data: mockResponse });
+      mockApiInstance.get.mockResolvedValueOnce({ data: mockResponse });
 
       const result = await ApiService.getHealth();
 
-      expect(mockedAxios.get).toHaveBeenCalledWith('/health');
+      expect(mockApiInstance.get).toHaveBeenCalledWith('/health');
       expect(result).toEqual(mockResponse);
     });
+
+    it('handles health check errors', async () => {
+      const errorMessage = 'Service unavailable';
+      mockApiInstance.get.mockRejectedValueOnce(new Error(errorMessage));
+
+      await expect(ApiService.getHealth()).rejects.toThrow(errorMessage);
+    });
+  });
 
     it('handles health check errors', async () => {
       const errorMessage = 'Service unavailable';
@@ -202,4 +227,3 @@ describe('ApiService', () => {
       expect(NewApiService).toBeDefined();
     });
   });
-});
