@@ -1,7 +1,7 @@
 """Redis-backed agent memory and caching."""
 
 import logging
-import pickle
+import pickle  # nosec B403 - Required for Redis serialization
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -83,7 +83,7 @@ class AgentMemory:
         """Deserialize data from Redis storage."""
         if data is None:
             return None
-        return pickle.loads(data)
+        return pickle.loads(data)  # nosec B301 - Required for Redis serialization
 
     async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """Set a key-value pair with optional TTL.

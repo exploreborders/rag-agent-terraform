@@ -129,7 +129,7 @@ class TestAPIIntegration:
     async def test_query_endpoint_empty_query(self, client):
         """Test query endpoint with empty query."""
         # Mock agent to avoid 503
-        with patch("app.main.rag_agent") as mock_agent:
+        with patch("app.main.rag_agent") as mock_agent:  # noqa: F841
             query_data = {"query": ""}
 
             response = client.post("/query", json=query_data)

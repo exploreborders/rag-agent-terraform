@@ -353,7 +353,7 @@ class DocumentLoader:
             Path to saved file
         """
         # Generate unique filename to avoid conflicts
-        file_hash = hashlib.md5(
+        file_hash = hashlib.sha256(
             filename.encode() + str(datetime.utcnow().timestamp()).encode()
         ).hexdigest()[:8]
         safe_filename = f"{file_hash}_{filename}"

@@ -18,7 +18,7 @@ from typing import List
 app_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(app_dir))
 
-from app.rag_agent import RAGAgent
+from app.rag_agent import RAGAgent  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

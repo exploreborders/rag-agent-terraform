@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     version: str = "0.1.0"
 
     # API Settings
-    api_host: str = "0.0.0.0"
+    api_host: str = "0.0.0.0"  # Bind to all interfaces for containerized deployment
     api_port: int = 8000
     api_reload: bool = True
 
