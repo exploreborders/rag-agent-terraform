@@ -302,8 +302,7 @@ class VectorStore:
             WHERE dc.embedding IS NOT NULL
         """
 
-        # Convert to list for PostgreSQL compatibility
-        # pgvector can handle Python lists directly
+        # Format query vector as PostgreSQL vector string for pgvector
         try:
             # Try to convert to list (works for both lists and numpy arrays)
             query_vec_list = list(query_vector)
@@ -311,7 +310,9 @@ class VectorStore:
             # If that fails, assume it's already a list
             query_vec_list = query_vector
 
-        params = [query_vec_list]
+        # Format as PostgreSQL vector string: '[val1,val2,val3]'
+        query_vec_str = f"[{','.join(str(float(x)) for x in query_vec_list)}]"
+        params = [query_vec_str]
         param_count = 1
 
         # Add filters
