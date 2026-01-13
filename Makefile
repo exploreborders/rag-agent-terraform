@@ -1,4 +1,4 @@
-.PHONY: help setup install dev clean test lint format check build deploy destroy
+.PHONY: help setup install dev clean test lint format check deploy destroy
 
 # Default target
 help: ## Show this help message
@@ -72,22 +72,8 @@ infra-validate: ## Validate Terraform configuration
 	@echo "Validating Terraform configuration..."
 	cd terraform && terraform validate
 
-# Docker
-docker-build: ## Build Docker images
-	@echo "Building Docker images..."
-	docker-compose build
-
-docker-up: ## Start Docker services
-	@echo "Starting Docker services..."
-	docker-compose up -d
-
-docker-down: ## Stop Docker services
-	@echo "Stopping Docker services..."
-	docker-compose down
-
-docker-logs: ## Show Docker logs
-	@echo "Showing Docker logs..."
-	docker-compose logs -f
+# Docker containers are managed by Terraform
+# Use 'make deploy' and 'make destroy' for infrastructure management
 
 # Deployment
 deploy: infra-apply ## Full deployment (infrastructure + containers)

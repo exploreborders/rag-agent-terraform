@@ -182,8 +182,7 @@ rag-agent-terraform/
 ├── AGENTS.md          # Development guidelines
 ├── IMPLEMENTATION_PLAN.md # Project roadmap
 ├── Makefile          # Build automation (15+ commands)
-├── evaluation_results.json # Latest performance metrics
-└── docker-compose.yml # Multi-container orchestration
+└── evaluation_results.json # Latest performance metrics
 ```
 
 ## 🛠️ Development
