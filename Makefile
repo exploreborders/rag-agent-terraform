@@ -8,7 +8,7 @@ help: ## Show this help message
 # Environment setup
 setup: ## Set up development environment
 	@echo "Setting up development environment..."
-	python -m venv venv
+	python3.11 -m venv venv
 	source venv/bin/activate && pip install -e .[dev]
 	cp .env.example .env
 	@echo "Environment setup complete. Run 'source venv/bin/activate' to activate."
@@ -19,24 +19,24 @@ install: ## Install dependencies
 
 dev: ## Start development server
 	@echo "Starting development server..."
-	source venv/bin/activate && cd src && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	source venv/bin/activate && cd src && python3.11 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # Testing
 test: ## Run all tests
 	@echo "Running tests..."
-	source venv/bin/activate && cd src && python -m pytest tests/ -v --cov=app --cov-report=html
+	source venv/bin/activate && cd src && python3.11 -m pytest tests/ -v --cov=app --cov-report=html
 
 test-unit: ## Run unit tests only
 	@echo "Running unit tests..."
-	source venv/bin/activate && cd src && python -m pytest tests/ -v -m "not integration"
+	source venv/bin/activate && cd src && python3.11 -m pytest tests/ -v -m "not integration"
 
 test-integration: ## Run integration tests only
 	@echo "Running integration tests..."
-	source venv/bin/activate && cd src && python -m pytest tests/ -v -m "integration"
+	source venv/bin/activate && cd src && python3.11 -m pytest tests/ -v -m "integration"
 
 test-cov: ## Run tests with coverage report
 	@echo "Running tests with coverage..."
-	source venv/bin/activate && cd src && python -m pytest tests/ --cov=app --cov-report=term-missing --cov-report=html
+	source venv/bin/activate && cd src && python3.11 -m pytest tests/ --cov=app --cov-report=term-missing --cov-report=html
 
 # Code quality
 lint: ## Run all linting tools
@@ -101,15 +101,15 @@ clean-all: clean ## Clean everything including venv
 # Data operations
 ingest-docs: ## Ingest sample documents
 	@echo "Ingesting documents..."
-	source venv/bin/activate && cd src && python scripts/ingest_documents.py --input ../data/documents/ --recursive
+	source venv/bin/activate && cd src && python3.11 scripts/ingest_documents.py --input ../data/documents/ --recursive
 
 setup-db: ## Set up vector database
 	@echo "Setting up vector database..."
-	source venv/bin/activate && cd src && python scripts/setup_vector_db.py
+	source venv/bin/activate && cd src && python3.11 scripts/setup_vector_db.py
 
 evaluate: ## Evaluate RAG performance
 	@echo "Evaluating RAG performance..."
-	source venv/bin/activate && cd src && python scripts/evaluate_rag.py --test-set ../data/test_queries.json
+	source venv/bin/activate && cd src && python3.11 scripts/evaluate_rag.py --test-set ../data/test_queries.json
 
 seed-db: ## Seed database with sample data
 	@echo "Seeding database..."

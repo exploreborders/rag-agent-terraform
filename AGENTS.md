@@ -4,25 +4,47 @@
 
 This is a Terraform-managed local infrastructure for an agentic RAG (Retrieval-Augmented Generation) system combining LangChain orchestration with LlamaIndex document indexing. The system processes PDF, text, and image documents using local Ollama AI models, PostgreSQL with pgvector for embeddings, and Redis for caching.
 
+The project consists of:
+- **Backend**: FastAPI application with document processing and RAG capabilities
+- **Frontend**: React/TypeScript application (in `/frontend` directory)
+- **Infrastructure**: Terraform-managed Docker containers and networking
+
 ## 🛠️ Development Commands
+
+### Environment Setup
+```bash
+# Complete development environment setup
+make workflow-dev
+
+# Or manually:
+make setup        # Set up Python virtual environment
+make install      # Install dependencies
+make infra-init   # Initialize Terraform
+make deploy       # Deploy infrastructure
+make dev          # Start development server
+```
 
 ### Infrastructure Management
 ```bash
 # Initialize and apply Terraform infrastructure
+make infra-init
+make infra-apply
+
+# Or manually:
 cd terraform && terraform init && terraform apply
 
 # Destroy infrastructure
+make destroy
+# or
 cd terraform && terraform destroy
 
 # Validate Terraform configuration
+make infra-validate
+# or
 cd terraform && terraform validate
-
-# Format Terraform files
-cd terraform && terraform fmt
 
 # Check infrastructure health
 docker ps
-docker-compose ps
 ```
 
 ### Application Development
@@ -31,16 +53,38 @@ docker-compose ps
 source venv/bin/activate
 
 # Install dependencies
-pip install -r src/requirements.txt
+make install
+# or
+pip install -e .[dev]
 
-# Run FastAPI application locally
+# Run FastAPI application with hot reload
+make dev
+# or
 cd src && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Run with hot reload during development
-cd src && python -m uvicorn app.main:app --reload
 
 # Access API documentation
 open http://localhost:8000/docs
+
+# Run frontend development server (if available)
+cd frontend && npm run dev
+```
+
+### Frontend Development
+```bash
+# Install frontend dependencies
+cd frontend && npm install
+
+# Start development server
+cd frontend && npm start
+
+# Run frontend tests
+cd frontend && npm test
+
+# Build for production
+cd frontend && npm run build
+
+# Run tests in CI mode with coverage
+cd frontend && npm run test:ci
 ```
 
 ### Testing Commands
@@ -48,33 +92,42 @@ open http://localhost:8000/docs
 # Run all tests
 make test
 # or
-cd src && python -m pytest tests/ -v
+cd src && python -m pytest tests/ -v --cov=app --cov-report=html
 
-# Run specific test file
-cd src && python -m pytest tests/test_rag_agent.py -v
-
-# Run single test function
-cd src && python -m pytest tests/test_rag_agent.py::test_agent_initialization -v
-
-# Run tests with coverage
-cd src && python -m pytest tests/ --cov=app --cov-report=html
+# Run unit tests only (excludes integration tests)
+make test-unit
+# or
+cd src && python -m pytest tests/ -v -m "not integration"
 
 # Run integration tests only
-cd src && python -m pytest tests/ -k "integration"
+make test-integration
+# or
+cd src && python -m pytest tests/ -v -m "integration"
 
-# Run tests in parallel
+# Run specific test file
+cd src && python -m pytest tests/test_api.py -v
+
+# Run single test function
+cd src && python -m pytest tests/test_api.py::TestAPIIntegration::test_health_endpoint -v
+
+# Run tests with coverage report
+make test-cov
+# or
+cd src && python -m pytest tests/ --cov=app --cov-report=term-missing --cov-report=html
+
+# Run tests in parallel (requires pytest-xdist)
 cd src && python -m pytest tests/ -n auto
 ```
 
 ### Code Quality & Linting
 ```bash
-# Format Python code with black
+# Format Python code with black (88 character line length)
 cd src && black .
 
 # Sort imports with isort
 cd src && isort .
 
-# Lint Python code with flake8
+# Lint Python code with flake8 (max 100 chars, E501 ignored)
 cd src && flake8 .
 
 # Type checking with mypy
@@ -85,6 +138,12 @@ make lint
 # or
 cd src && black . && isort . && flake8 . && mypy .
 ```
+
+#### Code Formatting Configuration
+- **Black**: 88 character line length, Python 3.11+ syntax
+- **Flake8**: 100 character line length (E501 error ignored)
+- **isort**: Black-compatible import sorting
+- **MyPy**: Strict type checking enabled
 
 ### Document Processing & Data Management
 ```bash
@@ -121,6 +180,7 @@ from langchain.chains import RetrievalQA
 from llama_index import VectorStoreIndex
 import psycopg2
 import redis
+import structlog
 
 # Local imports (organized by module hierarchy)
 from app.config import Settings
@@ -210,6 +270,46 @@ class VectorStore:
             return await self.ollama_client.embed(text)
 ```
 
+#### Logging with Structlog
+```python
+import logging
+import structlog
+
+# Configure structured logging in main.py
+logging.basicConfig(level=getattr(logging, settings.log_level.upper()))
+shared_processors = [
+    structlog.contextvars.merge_contextvars,
+    structlog.processors.add_log_level,
+    structlog.processors.TimeStamper(fmt="iso"),
+    structlog.processors.JSONRenderer(),
+]
+structlog.configure(
+    processors=shared_processors,
+    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+    context_class=dict,
+    logger_factory=structlog.WriteLoggerFactory(),
+    cache_logger_on_first_use=True,
+)
+
+logger = structlog.get_logger()
+
+# Usage in functions
+logger.info(
+    "Document uploaded and processed",
+    filename=file.filename,
+    file_size=file_size,
+    chunks_count=result.chunks_count,
+    processing_time=processing_time,
+)
+
+logger.error(
+    "Document processing failed",
+    filename=file.filename,
+    error=str(e),
+    exc_info=True
+)
+```
+
 ### Terraform Code Style
 
 #### Resource Naming
@@ -290,37 +390,59 @@ CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "
 ### Unit Tests Structure
 ```python
 import pytest
-from unittest.mock import Mock, AsyncMock
-import numpy as np
+from unittest.mock import Mock, AsyncMock, patch
+from fastapi.testclient import TestClient
 
-class TestRAGAgent:
+from app.main import app
+from app.models import HealthStatus
+
+
+class TestAPIIntegration:
+    """Integration tests for API endpoints using pytest markers."""
+
     @pytest.fixture
-    def mock_ollama_client(self):
-        client = Mock()
-        client.embed.return_value = np.random.rand(768)
-        client.generate.return_value = "Mock response"
-        return client
-
-    @pytest.fixture
-    def rag_agent(self, mock_ollama_client):
-        return RAGAgent(ollama_client=mock_ollama_client)
-
-    def test_agent_initialization(self, rag_agent):
-        """Test RAG agent initializes with required components."""
-        assert rag_agent.ollama_client is not None
-        assert rag_agent.vector_store is not None
-        assert rag_agent.memory is not None
+    def client(self):
+        """Test client for FastAPI application."""
+        return TestClient(app)
 
     @pytest.mark.asyncio
-    async def test_query_processing(self, rag_agent):
-        """Test end-to-end query processing."""
-        query = "What is machine learning?"
-        response = await rag_agent.query(query)
+    async def test_query_endpoint_success(self, client):
+        """Test successful query processing."""
+        query_data = {"query": "What is machine learning?", "top_k": 3}
 
-        assert isinstance(response, dict)
-        assert "answer" in response
-        assert "sources" in response
-        assert len(response["sources"]) > 0
+        from app.models import QueryResponse, QuerySource
+
+        mock_response = QueryResponse(
+            query="What is machine learning?",
+            answer="Machine learning is a subset of AI...",
+            sources=[
+                QuerySource(
+                    document_id="doc1",
+                    filename="ml_guide.pdf",
+                    content_type="application/pdf",
+                    chunk_text="Machine learning content...",
+                    similarity_score=0.85,
+                )
+            ],
+            confidence_score=0.85,
+            processing_time=1.2,
+            total_sources=1,
+        )
+
+        with patch("app.main.rag_agent") as mock_agent:
+            async def mock_query(*args, **kwargs):
+                return mock_response
+
+            mock_agent.query = mock_query
+
+            response = client.post("/query", json=query_data)
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["query"] == "What is machine learning?"
+            assert "answer" in data
+            assert len(data["sources"]) == 1
+            assert data["sources"][0]["similarity_score"] == 0.85
 ```
 
 ### Integration Tests
@@ -347,6 +469,25 @@ class TestAPIIntegration:
 
         assert query_response.status_code == 200
         assert "answer" in query_response.json()
+```
+
+### Test Configuration and Markers
+```python
+# pytest.ini_options in pyproject.toml
+[tool.pytest.ini_options]
+minversion = "7.4"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+markers = [
+    "unit: marks tests as unit tests",
+    "integration: marks tests as integration tests",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "asyncio: marks tests as async",
+]
 ```
 
 ### Test Coverage Requirements
