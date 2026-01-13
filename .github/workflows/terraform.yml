@@ -110,29 +110,32 @@ jobs:
     - name: Ensure SARIF file exists
       if: always()
       run: |
-        # Handle Checkov's output - it might create a directory or file
-        if [ -d "results.sarif" ]; then
-          # Checkov created a directory, find the SARIF file inside
-          SARIF_FILE=$(find results.sarif -name "*.sarif" | head -1)
-          if [ -n "$SARIF_FILE" ]; then
-            # Move the SARIF file to a temporary location first
-            mv "$SARIF_FILE" temp_results.sarif
-            # Remove the directory
-            rm -rf results.sarif
-            # Move the file to the expected location
-            mv temp_results.sarif results.sarif
-          else
-            # No SARIF file found, remove the directory
-            rm -rf results.sarif
-          fi
+        # Clean up any existing results.sarif (file or directory) with force
+        if [ -e "results.sarif" ]; then
+          chmod -R 755 results.sarif 2>/dev/null || true
+          rm -rf results.sarif || true
         fi
 
-        # Ensure we have a valid SARIF file
-        if [ ! -f "results.sarif" ] || [ ! -s "results.sarif" ] || [ -d "results.sarif" ]; then
-          # Remove any existing directory or invalid file
-          rm -rf results.sarif
+        # Try to find SARIF file if Checkov created a directory
+        if [ -d "results.sarif" ] 2>/dev/null; then
+          # Checkov created a directory, find the SARIF file inside
+          SARIF_FILE=$(find results.sarif -name "*.sarif" 2>/dev/null | head -1)
+          if [ -n "$SARIF_FILE" ] && [ -f "$SARIF_FILE" ]; then
+            # Copy the content to avoid permission issues
+            cp "$SARIF_FILE" temp_results.sarif 2>/dev/null || cat "$SARIF_FILE" > temp_results.sarif 2>/dev/null || true
+          fi
+          # Force remove the directory
+          chmod -R 755 results.sarif 2>/dev/null || true
+          rm -rf results.sarif 2>/dev/null || true
+        fi
 
-          # Create minimal SARIF file
+        # Move temp file to final location if it exists
+        if [ -f "temp_results.sarif" ] && [ -s "temp_results.sarif" ]; then
+          mv temp_results.sarif results.sarif
+        fi
+
+        # Create minimal SARIF file if we still don't have a valid one
+        if [ ! -f "results.sarif" ] || [ ! -s "results.sarif" ]; then
           cat > results.sarif << 'EOF'
         {
           "version": "2.1.0",
@@ -149,6 +152,9 @@ jobs:
         }
         EOF
         fi
+
+        # Final cleanup
+        rm -f temp_results.sarif 2>/dev/null || true
 
     - name: Upload SARIF file
       uses: github/codeql-action/upload-sarif@v4
