@@ -103,20 +103,26 @@ jobs:
     - name: Ensure SARIF file exists
       if: always()
       run: |
+        # Remove any existing results.sarif file or directory
+        rm -rf results.sarif
+
+        # Create minimal SARIF file if Checkov didn't generate one
         if [ ! -f results.sarif ]; then
-          echo '{
-            "version": "2.1.0",
-            "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
-            "runs": [{
-              "tool": {
-                "driver": {
-                  "name": "Checkov",
-                  "informationUri": "https://www.checkov.io/"
-                }
-              },
-              "results": []
-            }]
-          }' > results.sarif
+          cat > results.sarif << 'EOF'
+        {
+          "version": "2.1.0",
+          "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+          "runs": [{
+            "tool": {
+              "driver": {
+                "name": "Checkov",
+                "informationUri": "https://www.checkov.io/"
+              }
+            },
+            "results": []
+          }]
+        }
+        EOF
         fi
 
     - name: Upload SARIF file
