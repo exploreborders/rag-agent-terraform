@@ -115,9 +115,15 @@ jobs:
           # Checkov created a directory, find the SARIF file inside
           SARIF_FILE=$(find results.sarif -name "*.sarif" | head -1)
           if [ -n "$SARIF_FILE" ]; then
-            # Move the SARIF file to the expected location
-            mv "$SARIF_FILE" results.sarif
-            rm -rf results.sarif.backup 2>/dev/null || true
+            # Move the SARIF file to a temporary location first
+            mv "$SARIF_FILE" temp_results.sarif
+            # Remove the directory
+            rm -rf results.sarif
+            # Move the file to the expected location
+            mv temp_results.sarif results.sarif
+          else
+            # No SARIF file found, remove the directory
+            rm -rf results.sarif
           fi
         fi
 
