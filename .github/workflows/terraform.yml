@@ -75,12 +75,10 @@ jobs:
       if: steps.plan.outcome == 'failure'
       run: exit 1
 
-  terraform-security:
+   terraform-security:
     name: Terraform Security Scan
     runs-on: ubuntu-latest
     needs: terraform-validate
-    permissions:
-      security-events: write
 
     steps:
     - name: Checkout code
@@ -91,96 +89,10 @@ jobs:
       with:
         terraform_version: ${{ env.TF_VERSION }}
 
-    - name: Run Checkov
+    - name: Run Checkov Security Scan
       uses: bridgecrewio/checkov-action@v12
       with:
         directory: ${{ env.TF_WORKING_DIR }}
         framework: terraform
-        output_format: sarif
-        output_file_path: results.sarif
-        quiet: true
-
-    - name: Debug Checkov output
-      if: always()
-      run: |
-        echo "=== Checkov output debug ==="
-        ls -la results.sarif* 2>/dev/null || echo "No results.sarif files found"
-        find . -name "*.sarif" -type f 2>/dev/null | head -5 || echo "No SARIF files found"
-
-    - name: Ensure SARIF file exists
-      if: always()
-      run: |
-        # Step 1: Try to extract SARIF content from any existing structure
-        if [ -d "results.sarif" ] 2>/dev/null; then
-          echo "Found results.sarif directory, attempting to extract SARIF file..."
-          # Try to find and copy SARIF content
-          SARIF_FILE=$(find results.sarif -name "*.sarif" 2>/dev/null | head -1)
-          if [ -n "$SARIF_FILE" ] && [ -f "$SARIF_FILE" ]; then
-            echo "Found SARIF file: $SARIF_FILE"
-            # Try multiple approaches to copy content
-            if cp "$SARIF_FILE" temp_results.sarif 2>/dev/null; then
-              echo "Successfully copied SARIF content"
-            elif cat "$SARIF_FILE" > temp_results.sarif 2>/dev/null; then
-              echo "Successfully extracted SARIF content with cat"
-            else
-              echo "Failed to extract SARIF content"
-            fi
-          else
-            echo "No SARIF file found in directory"
-          fi
-        elif [ -f "results.sarif" ] && [ -s "results.sarif" ]; then
-          echo "Found existing SARIF file, copying to temp location"
-          cp results.sarif temp_results.sarif 2>/dev/null || true
-        fi
-
-        # Step 2: Clean up everything with maximum force
-        echo "Cleaning up any existing results.sarif..."
-        if [ -e "results.sarif" ]; then
-          # Try with sudo if regular removal fails
-          if ! rm -rf results.sarif 2>/dev/null; then
-            echo "Regular removal failed, trying with force permissions..."
-            chmod -R 777 results.sarif 2>/dev/null || true
-            rm -rf results.sarif 2>/dev/null || true
-          fi
-        fi
-
-        # Step 3: Set up the final SARIF file
-        if [ -f "temp_results.sarif" ] && [ -s "temp_results.sarif" ]; then
-          echo "Using extracted SARIF content"
-          mv temp_results.sarif results.sarif
-        else
-          echo "Creating minimal SARIF file"
-          cat > results.sarif << 'EOF'
-        {
-          "version": "2.1.0",
-          "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
-          "runs": [{
-            "tool": {
-              "driver": {
-                "name": "Checkov",
-                "informationUri": "https://www.checkov.io/"
-              }
-            },
-            "results": []
-          }]
-        }
-        EOF
-        fi
-
-        # Step 4: Verify we have a valid file
-        if [ -f "results.sarif" ] && [ -s "results.sarif" ]; then
-          echo "✅ SARIF file successfully created: $(wc -c < results.sarif) bytes"
-        else
-          echo "❌ Failed to create SARIF file"
-          exit 1
-        fi
-
-        # Step 5: Final cleanup
-        rm -f temp_results.sarif 2>/dev/null || true
-
-    - name: Upload SARIF file
-      uses: github/codeql-action/upload-sarif@v4
-      if: always()
-      with:
-        sarif_file: results.sarif
-        category: checkov
+        output_format: cli
+        quiet: false
