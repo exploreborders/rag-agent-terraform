@@ -110,32 +110,46 @@ jobs:
     - name: Ensure SARIF file exists
       if: always()
       run: |
-        # Clean up any existing results.sarif (file or directory) with force
-        if [ -e "results.sarif" ]; then
-          chmod -R 755 results.sarif 2>/dev/null || true
-          rm -rf results.sarif || true
-        fi
-
-        # Try to find SARIF file if Checkov created a directory
+        # Step 1: Try to extract SARIF content from any existing structure
         if [ -d "results.sarif" ] 2>/dev/null; then
-          # Checkov created a directory, find the SARIF file inside
+          echo "Found results.sarif directory, attempting to extract SARIF file..."
+          # Try to find and copy SARIF content
           SARIF_FILE=$(find results.sarif -name "*.sarif" 2>/dev/null | head -1)
           if [ -n "$SARIF_FILE" ] && [ -f "$SARIF_FILE" ]; then
-            # Copy the content to avoid permission issues
-            cp "$SARIF_FILE" temp_results.sarif 2>/dev/null || cat "$SARIF_FILE" > temp_results.sarif 2>/dev/null || true
+            echo "Found SARIF file: $SARIF_FILE"
+            # Try multiple approaches to copy content
+            if cp "$SARIF_FILE" temp_results.sarif 2>/dev/null; then
+              echo "Successfully copied SARIF content"
+            elif cat "$SARIF_FILE" > temp_results.sarif 2>/dev/null; then
+              echo "Successfully extracted SARIF content with cat"
+            else
+              echo "Failed to extract SARIF content"
+            fi
+          else
+            echo "No SARIF file found in directory"
           fi
-          # Force remove the directory
-          chmod -R 755 results.sarif 2>/dev/null || true
-          rm -rf results.sarif 2>/dev/null || true
+        elif [ -f "results.sarif" ] && [ -s "results.sarif" ]; then
+          echo "Found existing SARIF file, copying to temp location"
+          cp results.sarif temp_results.sarif 2>/dev/null || true
         fi
 
-        # Move temp file to final location if it exists
+        # Step 2: Clean up everything with maximum force
+        echo "Cleaning up any existing results.sarif..."
+        if [ -e "results.sarif" ]; then
+          # Try with sudo if regular removal fails
+          if ! rm -rf results.sarif 2>/dev/null; then
+            echo "Regular removal failed, trying with force permissions..."
+            chmod -R 777 results.sarif 2>/dev/null || true
+            rm -rf results.sarif 2>/dev/null || true
+          fi
+        fi
+
+        # Step 3: Set up the final SARIF file
         if [ -f "temp_results.sarif" ] && [ -s "temp_results.sarif" ]; then
+          echo "Using extracted SARIF content"
           mv temp_results.sarif results.sarif
-        fi
-
-        # Create minimal SARIF file if we still don't have a valid one
-        if [ ! -f "results.sarif" ] || [ ! -s "results.sarif" ]; then
+        else
+          echo "Creating minimal SARIF file"
           cat > results.sarif << 'EOF'
         {
           "version": "2.1.0",
@@ -153,7 +167,15 @@ jobs:
         EOF
         fi
 
-        # Final cleanup
+        # Step 4: Verify we have a valid file
+        if [ -f "results.sarif" ] && [ -s "results.sarif" ]; then
+          echo "✅ SARIF file successfully created: $(wc -c < results.sarif) bytes"
+        else
+          echo "❌ Failed to create SARIF file"
+          exit 1
+        fi
+
+        # Step 5: Final cleanup
         rm -f temp_results.sarif 2>/dev/null || true
 
     - name: Upload SARIF file
