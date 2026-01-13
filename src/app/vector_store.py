@@ -2,9 +2,10 @@
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import asyncpg
+import numpy as np
 from pgvector.asyncpg import register_vector
 
 from app.config import settings
@@ -175,7 +176,7 @@ class VectorStore:
                 metadata.get("page_count") or 0,  # Default to 0 if None
                 metadata.get("word_count") or 0,  # Default to 0 if None
                 metadata.get("checksum"),
-                json.dumps(metadata.get("metadata", {})),  # Convert dict to JSON string
+                json.dumps(metadata),  # Convert entire metadata dict to JSON string
             )
             print(f"DEBUG: Executing query with {len(params)} parameters")
             print(f"DEBUG: Parameter types: {[type(p).__name__ for p in params]}")
@@ -220,9 +221,15 @@ class VectorStore:
             chunk_data = []
             for chunk in chunks:
                 embedding = chunk.get("embedding")
-                # pgvector will handle the list conversion automatically
-                if not embedding or not isinstance(embedding, list):
-                    embedding = None
+                # Convert numpy arrays to lists for pgvector
+                if embedding is not None:
+                    if hasattr(embedding, "tolist"):  # numpy array
+                        embedding = embedding.tolist()
+                    elif not isinstance(embedding, list):
+                        embedding = None
+                logger.info(
+                    f"Chunk embedding type: {type(embedding)}, sample: {str(embedding)[:100] if embedding else None}"
+                )
 
                 chunk_data.append(
                     (
@@ -231,7 +238,7 @@ class VectorStore:
                         chunk["content"],
                         chunk["chunk_index"],
                         chunk["total_chunks"],
-                        embedding,  # Pass list directly - pgvector handles conversion
+                        embedding,  # Pass as string for PostgreSQL vector type
                         json.dumps(chunk.get("metadata", {})),
                     )
                 )
@@ -259,7 +266,7 @@ class VectorStore:
 
     async def similarity_search(
         self,
-        query_vector: List[float],
+        query_vector: Union[List[float], np.ndarray],
         top_k: int = 5,
         filters: Optional[Dict[str, Any]] = None,
         threshold: Optional[float] = None,
@@ -295,11 +302,16 @@ class VectorStore:
             WHERE dc.embedding IS NOT NULL
         """
 
-        # Convert to numpy array for pgvector compatibility
-        import numpy as np
+        # Convert to list for PostgreSQL compatibility
+        # pgvector can handle Python lists directly
+        try:
+            # Try to convert to list (works for both lists and numpy arrays)
+            query_vec_list = list(query_vector)
+        except TypeError:
+            # If that fails, assume it's already a list
+            query_vec_list = query_vector
 
-        query_vec_array = np.array(query_vector, dtype=np.float32)
-        params = [query_vec_array]
+        params = [query_vec_list]
         param_count = 1
 
         # Add filters
@@ -323,9 +335,9 @@ class VectorStore:
             base_query += f" AND (1 - (dc.embedding <=> $1)) >= ${param_count}"
             params.append(threshold)
 
-        # Add ordering and limit
+        # Add ordering and limit (order by similarity descending)
         param_count += 1
-        base_query += f" ORDER BY dc.embedding <=> $1 LIMIT ${param_count}"
+        base_query += f" ORDER BY (1 - (dc.embedding <=> $1)) DESC LIMIT ${param_count}"
         params.append(top_k)
 
         async with self._pool.acquire() as conn:
@@ -344,7 +356,7 @@ class VectorStore:
                     "content": row["content"],
                     "chunk_index": row["chunk_index"],
                     "total_chunks": row["total_chunks"],
-                    "metadata": dict(row["metadata"]) if row["metadata"] else {},
+                    "metadata": json.loads(row["metadata"]) if row["metadata"] else {},
                     "created_at": row["created_at"].isoformat(),
                     "filename": row["filename"],
                     "content_type": row["content_type"],
@@ -381,7 +393,7 @@ class VectorStore:
                 "page_count": row["page_count"],
                 "word_count": row["word_count"],
                 "checksum": row["checksum"],
-                "metadata": dict(row["metadata"]) if row["metadata"] else {},
+                "metadata": row["metadata"] if row["metadata"] else {},
             }
 
         return None
@@ -423,7 +435,7 @@ class VectorStore:
                     "page_count": row["page_count"],
                     "word_count": row["word_count"],
                     "checksum": row["checksum"],
-                    "metadata": dict(row["metadata"]) if row["metadata"] else {},
+                    "metadata": row["metadata"] if row["metadata"] else {},
                 }
             )
 
