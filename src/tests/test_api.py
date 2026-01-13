@@ -1,10 +1,9 @@
 """Integration tests for FastAPI application."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
 
 from app.main import app
 from app.models import HealthStatus
@@ -145,6 +144,7 @@ class TestAPIIntegration:
 
         with patch("app.main.rag_agent") as mock_agent:
             from unittest.mock import AsyncMock
+
             from app.models import QueryResponse
 
             mock_agent.query = AsyncMock(

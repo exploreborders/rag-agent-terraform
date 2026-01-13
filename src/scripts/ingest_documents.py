@@ -6,13 +6,13 @@ This script processes and ingests documents into the vector database for RAG.
 Supports PDF, text, and image files with automatic text extraction and chunking.
 """
 
-import asyncio
-import sys
 import argparse
+import asyncio
 import logging
+import mimetypes
+import sys
 from pathlib import Path
 from typing import List
-import mimetypes
 
 # Add the app directory to the path so we can import modules
 app_dir = Path(__file__).parent.parent

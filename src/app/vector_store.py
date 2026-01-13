@@ -55,7 +55,10 @@ class VectorStore:
         """Connect to PostgreSQL database."""
         try:
             self._pool = await asyncpg.create_pool(
-                self.connection_string, min_size=1, max_size=10, command_timeout=60
+                self.connection_string,
+                min_size=1,
+                max_size=10,
+                command_timeout=60,
             )
 
             # Register pgvector extension

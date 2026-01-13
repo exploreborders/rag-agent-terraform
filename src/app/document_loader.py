@@ -37,7 +37,9 @@ class DocumentLoader:
     """Multi-format document processing pipeline."""
 
     def __init__(
-        self, upload_dir: Optional[str] = None, processed_dir: Optional[str] = None
+        self,
+        upload_dir: Optional[str] = None,
+        processed_dir: Optional[str] = None,
     ):
         """Initialize document loader.
 
@@ -215,7 +217,10 @@ class DocumentLoader:
                 return "", {"ocr_error": str(e)}
 
     def _chunk_text(
-        self, text: str, chunk_size: Optional[int] = None, overlap: Optional[int] = None
+        self,
+        text: str,
+        chunk_size: Optional[int] = None,
+        overlap: Optional[int] = None,
     ) -> List[str]:
         """Split text into chunks with overlap.
 
@@ -287,7 +292,12 @@ class DocumentLoader:
             text, processing_metadata = self._process_pdf(file_path)
         elif content_type in ["text/plain", "text/markdown", "text/x-python"]:
             text, processing_metadata = self._process_text(file_path)
-        elif content_type in ["image/jpeg", "image/png", "image/gif", "image/webp"]:
+        elif content_type in [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+        ]:
             text, processing_metadata = self._process_image(file_path)
         else:
             raise UnsupportedFileTypeError(f"Unsupported content type: {content_type}")

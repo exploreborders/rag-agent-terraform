@@ -7,13 +7,13 @@ and measuring retrieval accuracy, answer quality, and response times.
 """
 
 import asyncio
-import sys
 import json
-import time
 import logging
-from pathlib import Path
-from typing import List, Dict, Any, Optional
 import statistics
+import sys
+import time
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Add the app directory to the path so we can import modules
 app_dir = Path(__file__).parent.parent

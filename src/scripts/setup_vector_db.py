@@ -7,18 +7,15 @@ tables and extensions are created for the RAG system.
 """
 
 import asyncio
+import logging
 import sys
-import os
 from pathlib import Path
 
 # Add the app directory to the path so we can import modules
 app_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(app_dir))
 
-import logging
-
 from app.vector_store import VectorStore
-from app.config import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +25,6 @@ async def main():
     logger.info("Starting vector database setup...")
 
     try:
-        # Load configuration
-        settings = Settings()
-
         # Create vector store instance
         vector_store = VectorStore()
 

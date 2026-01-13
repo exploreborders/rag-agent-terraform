@@ -104,7 +104,9 @@ async def health_check(agent: RAGAgent = Depends(get_rag_agent)):
         return JSONResponse(
             status_code=503,
             content=HealthStatus(
-                status="unhealthy", timestamp="unknown", services={"error": str(e)}
+                status="unhealthy",
+                timestamp="unknown",
+                services={"error": str(e)},
             ).dict(),
         )
 
@@ -230,7 +232,10 @@ async def list_documents(
     try:
         documents = await agent.list_documents(limit=limit, offset=offset)
         logger.info(
-            "Documents listed", count=len(documents), limit=limit, offset=offset
+            "Documents listed",
+            count=len(documents),
+            limit=limit,
+            offset=offset,
         )
         return documents
     except Exception as e:
@@ -264,7 +269,10 @@ async def delete_document(document_id: str, agent: RAGAgent = Depends(get_rag_ag
             raise HTTPException(status_code=404, detail="Document not found")
 
         logger.info("Document deleted", document_id=document_id)
-        return {"message": "Document deleted successfully", "document_id": document_id}
+        return {
+            "message": "Document deleted successfully",
+            "document_id": document_id,
+        }
     except HTTPException:
         raise
     except Exception as e:

@@ -1,9 +1,8 @@
 """Application configuration management."""
 
 import os
-from typing import Optional
 
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 

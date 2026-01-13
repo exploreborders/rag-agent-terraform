@@ -86,7 +86,10 @@ class TestOllamaClient:
     @pytest.mark.asyncio
     async def test_embed_success(self, ollama_client, mock_http_client):
         """Test successful embedding generation."""
-        mock_response = {"embedding": [0.1, 0.2, 0.3], "model": "embeddinggemma:latest"}
+        mock_response = {
+            "embedding": [0.1, 0.2, 0.3],
+            "model": "embeddinggemma:latest",
+        }
         mock_http_client.request.return_value = MagicMock()
         mock_http_client.request.return_value.json.return_value = mock_response
 
@@ -166,7 +169,9 @@ class TestOllamaClient:
         """Test model not found error handling."""
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
-            "Not Found", request=MagicMock(), response=MagicMock(status_code=404)
+            "Not Found",
+            request=MagicMock(),
+            response=MagicMock(status_code=404),
         )
         mock_http_client.request.return_value = mock_response
 
@@ -206,13 +211,6 @@ class TestOllamaClient:
         # This test verifies that the tenacity retry decorator is configured
         # Since the actual retry behavior is hard to test with mocks,
         # we just verify the decorator exists and has the right configuration
-        import inspect
-        from tenacity import (
-            retry,
-            stop_after_attempt,
-            wait_exponential,
-            retry_if_exception_type,
-        )
 
         # Check that _make_request has the retry decorator
         assert hasattr(ollama_client._make_request, "__wrapped__") or hasattr(

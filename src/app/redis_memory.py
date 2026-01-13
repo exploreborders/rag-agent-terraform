@@ -282,7 +282,10 @@ class AgentMemory:
 
     # Query Result Caching
     async def cache_query_result(
-        self, query_hash: str, result: Dict[str, Any], ttl: Optional[int] = None
+        self,
+        query_hash: str,
+        result: Dict[str, Any],
+        ttl: Optional[int] = None,
     ) -> bool:
         """Cache query results for performance.
 
