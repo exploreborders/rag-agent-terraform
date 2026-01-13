@@ -100,14 +100,29 @@ jobs:
         output_file_path: results.sarif
         quiet: true
 
+    - name: Debug Checkov output
+      if: always()
+      run: |
+        echo "=== Checkov output debug ==="
+        ls -la results.sarif* 2>/dev/null || echo "No results.sarif files found"
+        find . -name "*.sarif" -type f 2>/dev/null | head -5 || echo "No SARIF files found"
+
     - name: Ensure SARIF file exists
       if: always()
       run: |
-        # Remove any existing results.sarif file or directory
-        rm -rf results.sarif
+        # Handle Checkov's output - it might create a directory or file
+        if [ -d "results.sarif" ]; then
+          # Checkov created a directory, find the SARIF file inside
+          SARIF_FILE=$(find results.sarif -name "*.sarif" | head -1)
+          if [ -n "$SARIF_FILE" ]; then
+            # Move the SARIF file to the expected location
+            mv "$SARIF_FILE" results.sarif
+            rm -rf results.sarif.backup 2>/dev/null || true
+          fi
+        fi
 
-        # Create minimal SARIF file if Checkov didn't generate one
-        if [ ! -f results.sarif ]; then
+        # Create minimal SARIF file if no valid file exists
+        if [ ! -f "results.sarif" ] || [ ! -s "results.sarif" ]; then
           cat > results.sarif << 'EOF'
         {
           "version": "2.1.0",
