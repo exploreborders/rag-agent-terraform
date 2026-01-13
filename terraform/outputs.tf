@@ -96,6 +96,47 @@ output "app_status" {
   value       = docker_container.app.healthcheck[0].test
 }
 
+# Monitoring Services
+output "prometheus_container_name" {
+  description = "Prometheus container name"
+  value       = docker_container.prometheus.name
+}
+
+output "prometheus_port" {
+  description = "Prometheus port on host"
+  value       = var.prometheus_port
+}
+
+output "prometheus_url" {
+  description = "Prometheus URL"
+  value       = "http://localhost:${var.prometheus_port}"
+}
+
+output "prometheus_status" {
+  description = "Prometheus container health status"
+  value       = docker_container.prometheus.healthcheck[0].test
+}
+
+output "grafana_container_name" {
+  description = "Grafana container name"
+  value       = docker_container.grafana.name
+}
+
+output "grafana_port" {
+  description = "Grafana port on host"
+  value       = var.grafana_port
+}
+
+output "grafana_url" {
+  description = "Grafana URL"
+  value       = "http://localhost:${var.grafana_port}"
+}
+
+output "grafana_status" {
+  description = "Grafana container health status"
+  value       = docker_container.grafana.healthcheck[0].test
+}
+
 # Infrastructure Summary
 output "infrastructure_status" {
   description = "Summary of infrastructure deployment status"
@@ -125,6 +166,24 @@ output "infrastructure_status" {
           api    = "http://localhost:${var.app_port}"
           docs   = "http://localhost:${var.app_port}/docs"
           health = "http://localhost:${var.app_port}/health"
+        }
+      }
+      prometheus = {
+        name     = docker_container.prometheus.name
+        status   = "running"
+        port     = var.prometheus_port
+        health   = docker_container.prometheus.healthcheck[0].test
+        urls     = {
+          ui = "http://localhost:${var.prometheus_port}"
+        }
+      }
+      grafana = {
+        name     = docker_container.grafana.name
+        status   = "running"
+        port     = var.grafana_port
+        health   = docker_container.grafana.healthcheck[0].test
+        urls     = {
+          ui = "http://localhost:${var.grafana_port}"
         }
       }
     }

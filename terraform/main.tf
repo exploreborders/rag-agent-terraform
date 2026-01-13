@@ -220,3 +220,117 @@ resource "docker_container" "app" {
     docker_network.rag_network
   ]
 }
+
+# Prometheus for metrics collection
+resource "docker_image" "prometheus" {
+  name = local.prometheus_image
+}
+
+resource "docker_container" "prometheus" {
+  name  = local.prometheus_container_name
+  image = docker_image.prometheus.image_id
+
+  # Ports
+  ports {
+    internal = 9090
+    external = var.prometheus_port
+  }
+
+  # Volumes for configuration and data
+  dynamic "volumes" {
+    for_each = local.prometheus_volumes
+    content {
+      host_path      = volumes.value.host_path
+      container_path = volumes.value.container_path
+    }
+  }
+
+  # Health check
+  healthcheck {
+    test         = local.prometheus_healthcheck.test
+    interval     = local.prometheus_healthcheck.interval
+    timeout      = local.prometheus_healthcheck.timeout
+    retries      = local.prometheus_healthcheck.retries
+    start_period = "30s"
+  }
+
+  # Networking
+  networks_advanced {
+    name = docker_network.rag_network.name
+  }
+
+  # Restart policy
+  restart = "unless-stopped"
+
+  # Labels
+  dynamic "labels" {
+    for_each = local.common_tags
+    content {
+      label = lower(replace(labels.key, "_", "-"))
+      value = labels.value
+    }
+  }
+
+  # Wait for network to be ready
+  depends_on = [docker_network.rag_network]
+}
+
+# Grafana for metrics visualization
+resource "docker_image" "grafana" {
+  name = local.grafana_image
+}
+
+resource "docker_container" "grafana" {
+  name  = local.grafana_container_name
+  image = docker_image.grafana.image_id
+
+  # Environment variables
+  env = [
+    "GF_SECURITY_ADMIN_PASSWORD=${var.grafana_admin_password}",
+    "GF_USERS_ALLOW_SIGN_UP=false"
+  ]
+
+  # Ports
+  ports {
+    internal = 3000
+    external = var.grafana_port
+  }
+
+  # Volumes for data persistence
+  dynamic "volumes" {
+    for_each = local.grafana_volumes
+    content {
+      host_path      = volumes.value.host_path
+      container_path = volumes.value.container_path
+    }
+  }
+
+  # Health check
+  healthcheck {
+    test         = local.grafana_healthcheck.test
+    interval     = local.grafana_healthcheck.interval
+    timeout      = local.grafana_healthcheck.timeout
+    retries      = local.grafana_healthcheck.retries
+    start_period = "30s"
+  }
+
+  # Networking
+  networks_advanced {
+    name = docker_network.rag_network.name
+  }
+
+  # Restart policy
+  restart = "unless-stopped"
+
+  # Labels
+  dynamic "labels" {
+    for_each = local.common_tags
+    content {
+      label = lower(replace(labels.key, "_", "-"))
+      value = labels.value
+    }
+  }
+
+  # Wait for network to be ready
+  depends_on = [docker_network.rag_network]
+}

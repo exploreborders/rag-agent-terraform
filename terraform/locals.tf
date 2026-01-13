@@ -10,6 +10,8 @@ locals {
   postgres_container_name = "${local.project_name}-postgres-${local.environment}"
   redis_container_name    = "${local.project_name}-redis-${local.environment}"
   app_container_name      = "${local.project_name}-app-${local.environment}"
+  prometheus_container_name = "${local.project_name}-prometheus-${local.environment}"
+  grafana_container_name   = "${local.project_name}-grafana-${local.environment}"
 
   # Network configuration
   network_name = var.network_name != "" ? var.network_name : "${local.project_name}-network"
@@ -22,6 +24,8 @@ locals {
   postgres_image = "pgvector/pgvector:pg15"
   redis_image    = "redis:${var.redis_version}"
   app_image      = "${local.project_name}:${var.app_image_tag}"
+  prometheus_image = "prom/prometheus:latest"
+  grafana_image   = "grafana/grafana:latest"
 
   # Common labels for all resources
   common_tags = {
@@ -53,6 +57,20 @@ locals {
     retries  = var.healthcheck_retries
   }
 
+  prometheus_healthcheck = {
+    test     = ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+    interval = var.healthcheck_interval
+    timeout  = var.healthcheck_timeout
+    retries  = var.healthcheck_retries
+  }
+
+  grafana_healthcheck = {
+    test     = ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+    interval = var.healthcheck_interval
+    timeout  = var.healthcheck_timeout
+    retries  = var.healthcheck_retries
+  }
+
   # Volume configurations
   postgres_volumes = [
     {
@@ -72,6 +90,24 @@ locals {
     {
       host_path      = abspath("${path.root}/../data")
       container_path = "/app/data"
+    }
+  ]
+
+  prometheus_volumes = [
+    {
+      host_path      = abspath("${path.root}/../data/prometheus")
+      container_path = "/prometheus"
+    },
+    {
+      host_path      = abspath("${path.root}/../monitoring/prometheus.yml")
+      container_path = "/etc/prometheus/prometheus.yml"
+    }
+  ]
+
+  grafana_volumes = [
+    {
+      host_path      = abspath("${path.root}/../data/grafana")
+      container_path = "/var/lib/grafana"
     }
   ]
 }

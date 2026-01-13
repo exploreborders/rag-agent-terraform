@@ -96,6 +96,26 @@ variable "app_image_tag" {
   default     = "latest"
 }
 
+# Monitoring Configuration
+variable "prometheus_port" {
+  description = "Prometheus port on host"
+  type        = number
+  default     = 9090
+}
+
+variable "grafana_port" {
+  description = "Grafana port on host"
+  type        = number
+  default     = 3000
+}
+
+variable "grafana_admin_password" {
+  description = "Grafana admin password"
+  type        = string
+  default     = "admin"
+  sensitive   = true
+}
+
 # Network Configuration
 variable "network_name" {
   description = "Docker network name"

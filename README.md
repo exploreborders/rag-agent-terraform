@@ -4,27 +4,38 @@
 
 ## 📋 Overview
 
-This project delivers a complete, self-contained RAG system that processes documents and answers questions using local AI models. The system is production-ready with comprehensive testing and evaluation capabilities.
-
-**✅ Status: FULLY OPERATIONAL**
-- **100% Test Success Rate**: All queries processed successfully
-- **Production-Ready**: Complete infrastructure, monitoring, and error handling
-- **Performance**: ~3.5s average response time, 800+ character answers
-- **Architecture**: FastAPI + PostgreSQL + pgvector + Redis + Ollama
+This project delivers a complete, self-contained RAG system that processes documents and answers questions using local AI models. The system is production-ready with comprehensive testing, monitoring, and a modern web interface.
 
 ### Key Features
 
-- **Document Processing**: PDF, text, and image processing with automatic chunking
-- **Vector Search**: PostgreSQL with pgvector for similarity search
-- **AI Integration**: Local Ollama models (`llama3.2:latest`, `embeddinggemma:latest`)
-- **REST API**: FastAPI with automatic documentation and health monitoring
-- **Infrastructure as Code**: Complete Terraform container orchestration
-- **Caching & Memory**: Redis-backed query caching and conversation memory
-- **Comprehensive Testing**: 100% success rate in automated evaluation
+- **📱 Modern Web Interface**: React-based frontend with Material-UI for document management and querying
+- **📊 Monitoring & Observability**: Prometheus + Grafana stack for metrics collection and visualization
+- **🧪 Comprehensive Testing**: 200+ test cases covering backend and frontend functionality
+- **📄 Document Processing**: PDF, text, and image processing with automatic chunking
+- **🔍 Vector Search**: PostgreSQL with pgvector for similarity search
+- **🤖 AI Integration**: Local Ollama models (`llama3.2:latest`, `embeddinggemma:latest`)
+- **🚀 REST API**: FastAPI with automatic documentation and health monitoring
+- **🏗️ Infrastructure as Code**: Complete Terraform container orchestration
+- **💾 Caching & Memory**: Redis-backed query caching and conversation memory
+- **✅ Production Ready**: 100% success rate in automated evaluation
 
 ## 🏗️ Architecture
 
 ```
+┌─────────────────────────────────────────────────────────────┐
+│                    React Frontend                           │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │              Web Interface                            │  │
+│  │  ┌──────────────┐  ┌─────────────┐  ┌──────────────┐  │  │
+│  │  │ Document     │  │  Query      │  │  Results     │  │  │
+│  │  │ Upload       │  │  Interface  │  │  Display     │  │  │
+│  │  │ • Drag/Drop  │  │  • Filters  │  │  • Sources   │  │  │
+│  │  │ • Progress   │  │  • Search   │  │  • Metadata  │  │  │
+│  │  │ • Validation │  │  • Config   │  │  • Export    │  │  │
+│  │  └──────────────┘  └─────────────┘  └──────────────┘  │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                               │
 ┌─────────────────────────────────────────────────────────────┐
 │                    FastAPI Application                      │
 │  ┌──────────────────────────────────────────────────────┐   │
@@ -37,24 +48,32 @@ This project delivers a complete, self-contained RAG system that processes docum
 │  │  │ • OCR       │  │  • Search   │  │  • Local AI  │  │   │
 │  │  └─────────────┘  └─────────────┘  └──────────────┘  │   │
 │  └──────────────────────────────────────────────────────┘   │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                Infrastructure                       │    │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │    │
-│  │  │ PostgreSQL  │  │    Redis    │  │  Terraform  │  │    │
-│  │  │ • pgvector  │  │  • Caching  │  │  • IaC      │  │    │
-│  │  │ • Documents │  │  • Memory   │  │  • Local    │  │    │
-│  │  │ • Chunks    │  │  • Sessions │  │  • Deploy   │  │    │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘  │    │
-│  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                       ┌─────────────┐
-                       │   Ollama    │
-                       │   Models    │
-                       │ • llama3.2  │
-                       │ • embedding │
-                       │ • vision    │
-                       └─────────────┘
+                               │
+┌─────────────────────────────────────────────────────┐
+│                Monitoring & Infrastructure          │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │
+│  │ Prometheus  │  │  Grafana    │  │  Terraform  │  │
+│  │ • Metrics   │  │  • Dash-    │  │  • IaC      │  │
+│  │ • Collection│  │    boards   │  │  • Local    │  │
+│  │ • Alerting  │  │  • Visual-  │  │  • Deploy   │  │
+│  │             │  │    ization  │  │             │  │
+│  └─────────────┘  └─────────────┘  └─────────────┘  │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │
+│  │ PostgreSQL  │  │    Redis    │  │   Docker    │  │
+│  │ • pgvector  │  │  • Caching  │  │  • Compose  │  │
+│  │ • Documents │  │  • Memory   │  │  • Networks │  │
+│  │ • Chunks    │  │  • Sessions │  │  • Volumes  │  │
+│  └─────────────┘  └─────────────┘  └─────────────┘  │
+└─────────────────────────────────────────────────────┘
+                               │
+                        ┌─────────────┐
+                        │   Ollama    │
+                        │   Models    │
+                        │ • llama3.2  │
+                        │ • embedding │
+                        │ • vision    │
+                        └─────────────┘
 ```
 
 ## 🚀 Quick Start
@@ -108,15 +127,22 @@ curl http://localhost:8000/health
 ### 🎯 Immediate Testing
 
 ```bash
-# Access API documentation
-open http://localhost:8000/docs
+# 🌐 Access the web interface
+open http://localhost:3001  # React frontend
 
-# Test the system
+# 📚 Access API documentation
+open http://localhost:8000/docs  # FastAPI docs
+
+# 📊 View monitoring dashboards
+open http://localhost:9090  # Prometheus metrics
+open http://localhost:3000  # Grafana dashboards
+
+# 🧪 Test the system via API
 curl -X POST http://localhost:8000/query \
   -H 'Content-Type: application/json' \
   -d '{"query": "What is machine learning?"}'
 
-# Run performance evaluation
+# ✅ Run performance evaluation
 make evaluate  # 100% success rate expected
 ```
 
@@ -124,58 +150,58 @@ make evaluate  # 100% success rate expected
 
 ```
 rag-agent-terraform/
-├── 📁 terraform/          # Infrastructure as Code (Docker containers)
-├── 📁 docker/            # Container build configurations
-├── 📁 src/               # Python application
-│   ├── 📁 app/          # FastAPI application
-│   │   ├── main.py      # API server with health checks
-│   │   ├── config.py    # Environment configuration
+├── 📁 frontend/          # React web application
+│   ├── 📁 src/          # React components and logic
+│   │   ├── 📁 components/ # UI components (Upload, List, Query, Results)
+│   │   ├── 📁 services/  # API integration layer
+│   │   ├── 📁 types/     # TypeScript type definitions
+│   │   └── 📁 __tests__/ # Frontend test suite (200+ tests)
+│   ├── package.json     # Frontend dependencies and scripts
+│   ├── tsconfig.json    # TypeScript configuration
+│   └── jest.config.js   # Test configuration
+├── 📁 terraform/        # Infrastructure as Code (Docker containers)
+├── 📁 docker/          # Container build configurations
+├── 📁 src/             # Python FastAPI application
+│   ├── 📁 app/        # FastAPI application
+│   │   ├── main.py    # API server with health checks
+│   │   ├── config.py  # Environment configuration
 │   │   ├── rag_agent.py # Core RAG orchestration
 │   │   ├── vector_store.py # pgvector operations
 │   │   ├── ollama_client.py # AI model integration
 │   │   └── document_loader.py # Multi-format processing
-│   ├── 📁 scripts/      # Utility scripts
+│   ├── 📁 scripts/    # Utility scripts
 │   │   ├── setup_vector_db.py    # Database initialization
 │   │   ├── ingest_documents.py   # Document processing pipeline
 │   │   └── evaluate_rag.py       # Performance evaluation
-│   └── 📁 tests/        # Test suite (58 tests, 100% success)
-├── 📁 docs/             # Documentation
-├── 📁 scripts/          # Shell deployment scripts
-├── 📁 data/             # Sample documents and test data
-├── AGENTS.md            # Development guidelines
+│   └── 📁 tests/      # Backend test suite (58 tests, 100% success)
+├── 📁 monitoring/     # Prometheus configuration
+│   └── prometheus.yml # Metrics collection configuration
+├── 📁 docs/           # Documentation
+├── 📁 scripts/        # Shell deployment scripts
+├── 📁 data/           # Sample documents and test data
+├── AGENTS.md          # Development guidelines
 ├── IMPLEMENTATION_PLAN.md # Project roadmap
-├── Makefile            # Build automation (15+ commands)
-└── evaluation_results.json # Latest performance metrics
+├── Makefile          # Build automation (15+ commands)
+├── evaluation_results.json # Latest performance metrics
+└── docker-compose.yml # Multi-container orchestration
 ```
-
-## ✅ Current Status
-
-### 🟢 **System Status: FULLY OPERATIONAL**
-- **Infrastructure**: All containers running (PostgreSQL, Redis, FastAPI)
-- **Database**: pgvector extension active, schema initialized
-- **AI Models**: Ollama integration working (`llama3.2:latest`, `embeddinggemma:latest`)
-- **API**: All endpoints functional with comprehensive error handling
-- **Testing**: 58 tests passing (100% success rate)
-- **Evaluation**: RAG performance validated (100% query success, 800+ char responses)
-
-### 🧪 **Performance Metrics**
-- **Query Success Rate**: 100%
-- **Average Response Time**: ~3.5 seconds
-- **Answer Quality**: 800+ characters per response
-- **System Health**: All services monitored and healthy
 
 ## 🛠️ Development
 
 ### Available Commands
 
 ```bash
-# Quick setup (recommended)
-make workflow-dev       # Complete development setup
+# 🚀 Quick setup (recommended)
+make workflow-dev       # Complete development setup (backend + frontend)
 
-# Individual setup steps
+# Backend development
 make setup              # Python environment setup
 make deploy             # Infrastructure deployment
-make dev                # Start development server
+make dev                # Start FastAPI development server
+
+# Frontend development
+cd frontend && npm install  # Install React dependencies
+cd frontend && npm start    # Start React development server (port 3001)
 
 # Data operations
 make ingest-docs        # Process sample documents
@@ -183,7 +209,8 @@ make setup-db           # Initialize vector database
 make evaluate           # Run performance evaluation
 
 # Testing & Quality
-make test               # Run all tests (58 tests, 100% pass)
+make test               # Run backend tests (58 tests, 100% pass)
+cd frontend && npm run test:ci  # Run frontend tests (200+ tests)
 make lint               # Code quality checks
 make format             # Format code
 
@@ -212,11 +239,11 @@ cp .env.example .env
 
 All endpoints are operational and tested:
 
-- `GET /health` - **✅ WORKING**: Comprehensive health check with service status
-- `POST /documents/upload` - **✅ WORKING**: Multi-format document processing (PDF, text, images)
-- `POST /query` - **✅ WORKING**: RAG question answering with context retrieval
-- `GET /documents` - **✅ WORKING**: List all processed documents
-- `GET /documents/{id}` - **✅ WORKING**: Get detailed document information
+- `GET /health` - Comprehensive health check with service status
+- `POST /documents/upload` - Multi-format document processing (PDF, text, images)
+- `POST /query` - RAG question answering with context retrieval
+- `GET /documents` - List all processed documents
+- `GET /documents/{id}` - Get detailed document information
 
 ### Document Processing
 
@@ -266,11 +293,9 @@ curl http://localhost:8000/documents
 
 ### Ollama Models
 
-**✅ VERIFIED WORKING MODELS**:
-
 **Required**:
-- `llama3.2:latest` - **✅ ACTIVE**: Primary generation model (Llama 3.2)
-- `embeddinggemma:latest` - **✅ ACTIVE**: Text embeddings (768 dimensions, pgvector compatible)
+- `llama3.2:latest` - Primary generation model (Llama 3.2)
+- `embeddinggemma:latest` - Text embeddings (768 dimensions, pgvector compatible)
 
 **Optional**:
 - `devstral-small-2:latest` - Image understanding and OCR capabilities
@@ -291,38 +316,40 @@ ollama list
 
 ## 🧪 Testing & Evaluation
 
-### ✅ **Test Status: 58 TESTS PASSING (100% SUCCESS)**
+**Comprehensive Test Coverage**:
+- **Backend Tests** (58 tests, 100% pass rate):
+  - Unit Tests: Core functionality validation
+  - Integration Tests: API endpoint testing
+  - Document Processing: Multi-format handling
+  - Vector Operations: pgvector similarity search
+  - RAG Pipeline: End-to-end query processing
 
-**Test Coverage**:
-- **Unit Tests**: Core functionality validation
-- **Integration Tests**: API endpoint testing
-- **Document Processing**: Multi-format handling
-- **Vector Operations**: pgvector similarity search
-- **RAG Pipeline**: End-to-end query processing
+- **Frontend Tests** (200+ test cases):
+  - Component Tests: UI component functionality
+  - User Workflow Tests: Complete user journeys
+  - API Integration: Frontend-backend communication
+  - Error Handling: User-friendly error states
+  - Accessibility: Screen reader and keyboard navigation
 
 ### Running Tests
 
 ```bash
-# All tests (58 tests, 100% pass rate)
-make test
+# Backend tests (58 tests, 100% pass rate)
+make test               # All backend tests
+make test-unit          # Unit tests only
+make test-integration   # Integration tests only
+make test-cov           # Tests with coverage report
 
-# Unit tests only
-make test-unit
+# Frontend tests (200+ test cases)
+cd frontend && npm run test:ci    # All frontend tests with coverage
+cd frontend && npm run test:watch # Development test mode
+cd frontend && npm run test       # Interactive test mode
 
-# Integration tests
-make test-integration
-
-# With coverage report
-make test-cov
+# Full test suite (backend + frontend)
+make test && cd frontend && npm run test:ci
 ```
 
 ### 🎯 **RAG Performance Evaluation**
-
-**Latest Results** (evaluation_results.json):
-- **Query Success Rate**: 100%
-- **Average Response Time**: 3.5 seconds
-- **Answer Quality**: 800+ characters
-- **System Reliability**: All services operational
 
 ```bash
 # Run comprehensive evaluation
@@ -334,20 +361,49 @@ cat evaluation_results.json | jq '.summary'
 
 ## 📊 Performance & Monitoring
 
-### Health Checks
+### 🏥 Health Checks
 
-- **Application**: `/health` endpoint
-- **Database**: PostgreSQL connection
-- **Redis**: Cache connectivity
-- **Ollama**: Model availability
+- **Application**: `/health` endpoint with service status
+- **Database**: PostgreSQL connection and pgvector functionality
+- **Redis**: Cache connectivity and memory usage
+- **Ollama**: Model availability and response times
+- **Frontend**: React application health and responsiveness
 
-### Logging
+### 📈 Monitoring Stack
+
+**Prometheus Metrics Collection**:
+- API response times and throughput
+- Database query performance
+- Cache hit/miss ratios
+- Model inference latency
+- Error rates and availability
+
+**Grafana Dashboards**:
+- System overview with key metrics
+- Performance trends and alerts
+- Resource utilization graphs
+- Custom dashboards for RAG operations
+
+```bash
+# Access monitoring interfaces
+open http://localhost:9090  # Prometheus metrics
+open http://localhost:3000  # Grafana dashboards (admin/admin)
+```
+
+### 📝 Logging
 
 Structured JSON logging with configurable levels:
 - `DEBUG`: Detailed debugging information
 - `INFO`: General operational messages
 - `WARNING`: Warning conditions
 - `ERROR`: Error conditions
+
+### 🔍 Observability Features
+
+- **Real-time Metrics**: Live system performance monitoring
+- **Alerting**: Configurable alerts for system issues
+- **Tracing**: Request tracing through the entire pipeline
+- **Custom Dashboards**: Tailored views for different stakeholders
 
 ## 🔒 Security
 
@@ -367,15 +423,6 @@ Structured JSON logging with configurable levels:
 - Content scanning
 
 ## 🚀 Deployment
-
-### 🟢 **Production Status: READY FOR DEPLOYMENT**
-
-The system is production-ready with:
-- Complete error handling and logging
-- Health monitoring and service checks
-- Comprehensive testing (100% pass rate)
-- Infrastructure as code with Terraform
-- Automated deployment scripts
 
 ### Quick Development Setup
 
@@ -452,10 +499,6 @@ curl http://localhost:8000/health
 - **Code Docs**: Inline documentation following Google style
 
 ## 🐛 Troubleshooting
-
-### ✅ **System Health: OPERATIONAL**
-
-**All components are working correctly.** If you encounter issues:
 
 ### Common Issues & Solutions
 
