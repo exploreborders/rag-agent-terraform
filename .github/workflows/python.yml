@@ -116,10 +116,9 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Run Bandit Security Linter
-      uses: jpetrucciani/bandit-check@1.1.1
-      with:
-        path: 'src'
-        options: '-r'
+      run: |
+        pip install bandit[toml]
+        bandit -r src/
 
     - name: Run Safety check
       run: |
