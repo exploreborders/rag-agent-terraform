@@ -127,8 +127,12 @@ jobs:
           fi
         fi
 
-        # Create minimal SARIF file if no valid file exists
-        if [ ! -f "results.sarif" ] || [ ! -s "results.sarif" ]; then
+        # Ensure we have a valid SARIF file
+        if [ ! -f "results.sarif" ] || [ ! -s "results.sarif" ] || [ -d "results.sarif" ]; then
+          # Remove any existing directory or invalid file
+          rm -rf results.sarif
+
+          # Create minimal SARIF file
           cat > results.sarif << 'EOF'
         {
           "version": "2.1.0",
