@@ -87,7 +87,16 @@ infra-validate: ## Validate Terraform configuration
 deploy: infra-apply ## Full deployment (infrastructure + containers)
 	@echo "Deployment complete. Services starting..."
 
-destroy: infra-destroy ## Full teardown
+destroy: ## Full teardown (fast Docker cleanup)
+	@echo "🧹 Fast cleanup - stopping containers..."
+	-docker stop $$(docker ps -q --filter "name=rag-agent") 2>/dev/null || true
+	@echo "🗑️ Removing containers..."
+	-docker rm $$(docker ps -aq --filter "name=rag-agent") 2>/dev/null || true
+	@echo "🌐 Removing network..."
+	-docker network rm rag-agent-network 2>/dev/null || true
+	@echo "🧽 Cleaning up images..."
+	-docker image prune -f
+	@echo "✅ Cleanup complete! Use 'make deploy' to restart."
 	@echo "Teardown complete."
 
 # Development utilities

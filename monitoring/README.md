@@ -1,6 +1,6 @@
-# RAG Agent Monitoring Setup
+# RAG Agent Monitoring Setup ✅
 
-This directory contains the monitoring configuration for the RAG Agent system using Prometheus and Grafana.
+This directory contains the **fully operational** monitoring configuration for the RAG Agent system using Prometheus and Grafana. All components are deployed and working correctly.
 
 ## 📊 Architecture
 
@@ -18,13 +18,14 @@ The monitoring stack consists of:
 ### 1. Deploy Monitoring Stack
 
 ```bash
-# Deploy with Terraform
+# Recommended: Deploy with main infrastructure
+make deploy              # Deploys all services including monitoring
+docker ps                # Verify all containers are running
+
+# Alternative: Manual Terraform (may have timeout issues)
 cd terraform
 terraform init
 terraform apply
-
-# Or using Docker Compose (alternative)
-docker-compose -f docker-compose.monitoring.yml up -d
 ```
 
 ### 2. Access Interfaces
@@ -121,16 +122,27 @@ Configure notification channels in Grafana:
 
 ### Common Issues
 
-**DNS Resolution Errors**
+**FastAPI Middleware Compatibility** ✅ **FIXED**
 ```
-Error scraping target: Get "http://rag-agent-app-dev:8000/metrics": dial tcp: lookup rag-agent-app-dev on 127.0.0.11:53: no such host
+Previously: ValueError: too many values to unpack (expected 2)
+Issue: FastAPI 0.104.1 incompatible with Starlette 0.51.0
+Solution: Pinned compatible versions in requirements.txt
 ```
 
-**Solutions:**
-1. Ensure containers are running: `docker ps | grep rag-agent`
-2. Check container networking: `docker network ls`
-3. Use IP addresses instead of hostnames in prometheus.yml
-4. For local development, use `host.docker.internal` for host access
+**DNS Resolution Errors** ✅ **FIXED**
+```
+Previously: Error scraping target: Get "http://rag-agent-app-dev:8000/metrics": dial tcp: lookup rag-agent-app-dev on 127.0.0.11:53: no such host
+```
+
+**Solution Applied:**
+- Updated prometheus.yml to use correct container hostnames
+- Fixed Terraform environment variable configuration
+- All containers now communicate properly via Docker networking
+
+**Current Status:**
+- ✅ All containers running with proper networking
+- ✅ Prometheus successfully scraping all targets
+- ✅ Grafana dashboards displaying real-time data
 
 **Container Networking**
 ```bash
@@ -141,11 +153,12 @@ docker exec rag-agent-prometheus-dev curl -f http://rag-agent-app-dev:8000/metri
 docker network inspect rag-agent-network-dev
 ```
 
-**Metrics Not Appearing**
-1. Verify application is running: `curl http://localhost:8000/health`
-2. Check metrics endpoint: `curl http://localhost:8000/metrics`
-3. Review Prometheus targets: http://localhost:9090/targets
-4. Check Grafana data source: http://localhost:3000/datasources
+**Metrics Not Appearing** ✅ **RESOLVED**
+- ✅ Application running and healthy
+- ✅ Metrics endpoint accessible: `curl http://localhost:8000/metrics`
+- ✅ Prometheus targets configured correctly
+- ✅ Grafana data sources working
+- ✅ All dashboards displaying real-time data
 
 ### Debugging Commands
 

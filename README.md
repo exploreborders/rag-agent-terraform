@@ -220,7 +220,7 @@ make infra-destroy      # Destroy infrastructure
 
 # Production deployment
 make deploy             # Full production deployment
-make destroy            # Complete teardown
+make destroy            # Fast cleanup and teardown
 ```
 
 ### Environment Configuration
@@ -240,9 +240,9 @@ All endpoints are operational and tested:
 
 - `GET /health` - Comprehensive health check with service status
 - `POST /documents/upload` - Multi-format document processing (PDF, text, images)
+- `GET /documents` - List all uploaded documents with metadata
 - `POST /query` - RAG question answering with context retrieval
-- `GET /documents` - List all processed documents
-- `GET /documents/{id}` - Get detailed document information
+- `GET /metrics` - Prometheus metrics endpoint
 
 ### Document Processing
 
@@ -276,6 +276,9 @@ curl -X POST http://localhost:8000/query \
 
 # List documents
 curl http://localhost:8000/documents
+
+# View metrics
+curl http://localhost:8000/metrics
 ```
 
 ## 🔧 Configuration
@@ -501,7 +504,14 @@ curl http://localhost:8000/health
 
 ### Common Issues & Solutions
 
-1. **✅ Ollama connection verified**
+1. **✅ FastAPI middleware compatibility fixed**
+   ```bash
+   # Issue: ValueError: too many values to unpack (expected 2)
+   # Solution: Compatible versions installed automatically
+   # FastAPI 0.104.1 + Starlette 0.27.0 + prometheus-client 0.19.0
+   ```
+
+2. **✅ Ollama connection verified**
    ```bash
    # Check Ollama status
    ollama list

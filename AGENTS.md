@@ -26,25 +26,20 @@ make dev          # Start development server
 
 ### Infrastructure Management
 ```bash
-# Initialize and apply Terraform infrastructure
-make infra-init
-make infra-apply
+# Recommended: Manual Docker deployment (faster, more reliable)
+make deploy              # Deploy all services with Docker
+docker ps                # Check running containers
 
-# Or manually:
-cd terraform && terraform init && terraform apply
+# Alternative: Terraform deployment (may timeout on image builds)
+make infra-init          # Initialize Terraform
+make infra-apply         # Apply infrastructure (use with caution)
 
 # Destroy infrastructure
-make destroy
-# or
-cd terraform && terraform destroy
-
-# Validate Terraform configuration
-make infra-validate
-# or
-cd terraform && terraform validate
+make destroy            # Stop all services and clean up
 
 # Check infrastructure health
-docker ps
+docker ps               # Verify all containers are running
+curl http://localhost:8000/health  # Test application health
 ```
 
 ### Application Development

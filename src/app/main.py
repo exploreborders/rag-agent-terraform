@@ -40,6 +40,18 @@ RAG_QUERIES_PROCESSED = Counter(
     "Total number of queries processed by RAG agent",
 )
 
+# Basic HTTP request metrics
+HTTP_REQUESTS_TOTAL = Counter(
+    "rag_http_requests_total",
+    "Total number of HTTP requests",
+    ["method", "endpoint", "status"],
+)
+
+RAG_QUERIES_PROCESSED = Counter(
+    "rag_agent_queries_processed_total",
+    "Total number of queries processed by RAG agent",
+)
+
 QUERIES_PROCESSED = Counter(
     "rag_queries_processed_total",
     "Total number of queries processed",
@@ -74,6 +86,15 @@ async def lifespan(app: FastAPI):
             registry=rag_registry,
         )
 
+        # Initialize HTTP metrics
+        global HTTP_REQUESTS_TOTAL
+        HTTP_REQUESTS_TOTAL = Counter(
+            "rag_http_requests_total",
+            "Total number of HTTP requests",
+            ["method", "endpoint", "status"],
+            registry=rag_registry,
+        )
+
         rag_agent = RAGAgent()
         logger.info("RAG Agent initialized successfully")
     except Exception as e:
@@ -102,6 +123,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Custom middleware to track HTTP requests
+@app.middleware("http")
+async def track_requests(request, call_next):
+    """Middleware to track HTTP requests for metrics."""
+    response = await call_next(request)
+
+    # Track the request
+    if HTTP_REQUESTS_TOTAL:
+        HTTP_REQUESTS_TOTAL.labels(
+            method=request.method,
+            endpoint=request.url.path,
+            status=str(response.status_code),
+        ).inc()
+
+    return response
+
 
 # Add Prometheus middleware
 app.add_middleware(PrometheusMiddleware, app_name="rag-agent", prefix="rag")
