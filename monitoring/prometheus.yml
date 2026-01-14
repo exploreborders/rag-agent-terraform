@@ -16,6 +16,12 @@ scrape_configs:
     metrics_path: '/metrics'
     scrape_interval: 5s
 
+  - job_name: 'rag-agent-custom'
+    static_configs:
+      - targets: ['rag-agent-app-dev:8000']
+    metrics_path: '/metrics/rag'
+    scrape_interval: 5s
+
   - job_name: 'postgres'
     static_configs:
       - targets: ['rag-agent-postgres-exporter-dev:9187']

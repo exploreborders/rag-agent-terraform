@@ -30,6 +30,14 @@
           {
             "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
             "legendFormat": "CPU Usage %"
+          },
+          {
+            "expr": "rate(node_cpu_seconds_total{mode=\"user\"}[5m]) * 100",
+            "legendFormat": "CPU User %"
+          },
+          {
+            "expr": "rate(node_cpu_seconds_total{mode=\"system\"}[5m]) * 100",
+            "legendFormat": "CPU System %"
           }
         ]
       },
@@ -44,8 +52,12 @@
         },
         "targets": [
           {
-            "expr": "100 - ((node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100)",
+            "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100",
             "legendFormat": "Memory Usage %"
+          },
+          {
+            "expr": "node_memory_MemTotal_bytes / 1024 / 1024 / 1024",
+            "legendFormat": "Total Memory (GB)"
           }
         ]
       },
@@ -96,7 +108,7 @@
         }
       },
       {
-        "title": "Container CPU Usage",
+        "title": "Disk I/O",
         "type": "graph",
         "gridPos": {
           "h": 8,
@@ -106,13 +118,17 @@
         },
         "targets": [
           {
-            "expr": "rate(container_cpu_usage_seconds_total[5m]) * 100",
-            "legendFormat": "{{name}}"
+            "expr": "rate(node_disk_read_bytes_total[5m])",
+            "legendFormat": "Read - {{device}}"
+          },
+          {
+            "expr": "rate(node_disk_written_bytes_total[5m])",
+            "legendFormat": "Write - {{device}}"
           }
         ]
       },
       {
-        "title": "Container Memory Usage",
+        "title": "System Uptime",
         "type": "graph",
         "gridPos": {
           "h": 8,
@@ -122,28 +138,8 @@
         },
         "targets": [
           {
-            "expr": "container_memory_usage_bytes",
-            "legendFormat": "{{name}}"
-          }
-        ]
-      },
-      {
-        "title": "Container Network I/O",
-        "type": "graph",
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 0,
-          "y": 26
-        },
-        "targets": [
-          {
-            "expr": "rate(container_network_receive_bytes_total[5m])",
-            "legendFormat": "{{name}} - receive"
-          },
-          {
-            "expr": "rate(container_network_transmit_bytes_total[5m])",
-            "legendFormat": "{{name}} - transmit"
+            "expr": "node_time_seconds - node_boot_time_seconds",
+            "legendFormat": "Uptime (seconds)"
           }
         ]
       },

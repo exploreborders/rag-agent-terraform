@@ -25,28 +25,10 @@ logger = logging.getLogger(__name__)
 # Custom registry for RAG metrics to avoid conflicts with starlette-exporter
 rag_registry = CollectorRegistry()
 
-# Custom registry to avoid conflicts with default registry during tests
-custom_registry = CollectorRegistry()
-
 # Metrics - will be initialized only when app starts
 RAG_DOCUMENTS_PROCESSED = None
 RAG_QUERIES_PROCESSED = None
 HTTP_REQUESTS_TOTAL = None
-
-RAG_QUERIES_PROCESSED = Counter(
-    "rag_agent_queries_processed_total",
-    "Total number of queries processed by RAG agent",
-)
-
-QUERIES_PROCESSED = Counter(
-    "rag_queries_processed_total",
-    "Total number of queries processed",
-)
-
-ACTIVE_CONNECTIONS = Gauge(
-    "rag_active_connections",
-    "Number of active connections",
-)
 
 # Global RAG agent instance
 rag_agent: Optional[RAGAgent] = None
@@ -65,12 +47,12 @@ async def lifespan(app: FastAPI):
         RAG_DOCUMENTS_PROCESSED = Counter(
             "rag_agent_documents_processed_total",
             "Total number of documents processed by RAG agent",
-            registry=custom_registry,
+            registry=rag_registry,
         )
         RAG_QUERIES_PROCESSED = Counter(
             "rag_agent_queries_processed_total",
             "Total number of queries processed by RAG agent",
-            registry=custom_registry,
+            registry=rag_registry,
         )
 
         # Initialize HTTP metrics
@@ -78,11 +60,20 @@ async def lifespan(app: FastAPI):
             "rag_http_requests_total",
             "Total number of HTTP requests",
             ["method", "endpoint", "status"],
-            registry=custom_registry,
+            registry=rag_registry,
         )
 
         rag_agent = RAGAgent()
         logger.info("RAG Agent initialized successfully")
+
+        # Initialize document counter with current count from database
+        try:
+            documents_data = await rag_agent.list_documents(limit=1000, offset=0)
+            if RAG_DOCUMENTS_PROCESSED:
+                RAG_DOCUMENTS_PROCESSED.inc(len(documents_data))
+                logger.info(f"Initialized document counter to {len(documents_data)}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize document counter: {e}")
     except Exception as e:
         logger.error(f"Failed to initialize RAG Agent: {e}")
         raise
@@ -172,13 +163,22 @@ async def health_check():
 
         return HealthStatus(
             status="healthy",
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.utcnow().isoformat()[:19] + "Z",
             version=settings.version,
             services={
                 "rag_agent": "healthy",
                 "vector_store": "healthy",
                 "ollama_client": "healthy",
             },
+        )
+
+        from datetime import datetime
+
+        return HealthStatus(
+            status="healthy",
+            timestamp=datetime.utcnow().isoformat()[:19] + "Z",
+            version=settings.version,
+            services=services_status,
         )
 
     except Exception as e:

@@ -105,10 +105,14 @@
           "y": 18
         },
         "targets": [
-          {
-            "expr": "rate(pg_stat_user_indexes_idx_scan{indexname=~\".*embedding.*\"}[5m])",
-            "legendFormat": "Vector Index Scans"
-          }
+        {
+          "expr": "rate(pg_statio_user_tables_idx_blocks_hit[5m])",
+          "legendFormat": "Index Block Hits"
+        },
+        {
+          "expr": "rate(pg_statio_user_tables_idx_blocks_read[5m])",
+          "legendFormat": "Index Block Reads"
+        }
         ]
       },
       {
@@ -144,7 +148,7 @@
         }
       },
       {
-        "title": "Slow Queries",
+        "title": "Active Connections",
         "type": "table",
         "gridPos": {
           "h": 8,
@@ -154,8 +158,8 @@
         },
         "targets": [
           {
-            "expr": "pg_stat_activity_query_start",
-            "legendFormat": "{{datname}} - {{usename}} - {{query}}"
+            "expr": "pg_stat_activity_count{state=\"active\"}",
+            "legendFormat": "{{datname}} - {{state}}"
           }
         ]
       }
