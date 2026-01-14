@@ -134,6 +134,25 @@ variable "node_exporter_port" {
   default     = 9100
 }
 
+# MCP Coordinator Configuration
+variable "mcp_coordinator_port" {
+  description = "MCP Coordinator port on host"
+  type        = number
+  default     = 8001
+}
+
+variable "mcp_coordinator_memory_limit" {
+  description = "Memory limit for MCP Coordinator container in MB"
+  type        = number
+  default     = 536870912 # 512MB in bytes
+}
+
+variable "mcp_coordinator_memory_swap_limit" {
+  description = "Memory swap limit for MCP Coordinator container in MB"
+  type        = number
+  default     = 1073741824 # 1GB in bytes
+}
+
 # Network Configuration
 variable "network_name" {
   description = "Docker network name"

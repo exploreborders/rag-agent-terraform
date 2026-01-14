@@ -137,6 +137,32 @@ output "grafana_status" {
   value       = docker_container.grafana.healthcheck[0].test
 }
 
+# MCP Coordinator Service
+output "mcp_coordinator_container_name" {
+  description = "MCP Coordinator container name"
+  value       = docker_container.mcp_coordinator.name
+}
+
+output "mcp_coordinator_port" {
+  description = "MCP Coordinator port on host"
+  value       = var.mcp_coordinator_port
+}
+
+output "mcp_coordinator_url" {
+  description = "MCP Coordinator URL"
+  value       = "http://localhost:${var.mcp_coordinator_port}"
+}
+
+output "mcp_coordinator_health_url" {
+  description = "MCP Coordinator health check URL"
+  value       = "http://localhost:${var.mcp_coordinator_port}/health"
+}
+
+output "mcp_coordinator_status" {
+  description = "MCP Coordinator container health status"
+  value       = docker_container.mcp_coordinator.healthcheck[0].test
+}
+
 # Infrastructure Summary
 output "infrastructure_status" {
   description = "Summary of infrastructure deployment status"
@@ -146,44 +172,54 @@ output "infrastructure_status" {
     network      = docker_network.rag_network.name
     services = {
       postgres = {
-        name     = docker_container.postgres.name
-        status   = "running"
-        port     = var.postgres_port
-        health   = docker_container.postgres.healthcheck[0].test
+        name   = docker_container.postgres.name
+        status = "running"
+        port   = var.postgres_port
+        health = docker_container.postgres.healthcheck[0].test
       }
       redis = {
-        name     = docker_container.redis.name
-        status   = "running"
-        port     = var.redis_port
-        health   = docker_container.redis.healthcheck[0].test
+        name   = docker_container.redis.name
+        status = "running"
+        port   = var.redis_port
+        health = docker_container.redis.healthcheck[0].test
       }
       app = {
-        name     = docker_container.app.name
-        status   = "running"
-        port     = var.app_port
-        health   = docker_container.app.healthcheck[0].test
-        urls     = {
+        name   = docker_container.app.name
+        status = "running"
+        port   = var.app_port
+        health = docker_container.app.healthcheck[0].test
+        urls = {
           api    = "http://localhost:${var.app_port}"
           docs   = "http://localhost:${var.app_port}/docs"
           health = "http://localhost:${var.app_port}/health"
         }
       }
       prometheus = {
-        name     = docker_container.prometheus.name
-        status   = "running"
-        port     = var.prometheus_port
-        health   = docker_container.prometheus.healthcheck[0].test
-        urls     = {
+        name   = docker_container.prometheus.name
+        status = "running"
+        port   = var.prometheus_port
+        health = docker_container.prometheus.healthcheck[0].test
+        urls = {
           ui = "http://localhost:${var.prometheus_port}"
         }
       }
       grafana = {
-        name     = docker_container.grafana.name
-        status   = "running"
-        port     = var.grafana_port
-        health   = docker_container.grafana.healthcheck[0].test
-        urls     = {
+        name   = docker_container.grafana.name
+        status = "running"
+        port   = var.grafana_port
+        health = docker_container.grafana.healthcheck[0].test
+        urls = {
           ui = "http://localhost:${var.grafana_port}"
+        }
+      }
+      mcp_coordinator = {
+        name   = docker_container.mcp_coordinator.name
+        status = "running"
+        port   = var.mcp_coordinator_port
+        health = docker_container.mcp_coordinator.healthcheck[0].test
+        urls = {
+          api    = "http://localhost:${var.mcp_coordinator_port}"
+          health = "http://localhost:${var.mcp_coordinator_port}/health"
         }
       }
     }

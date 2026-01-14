@@ -60,6 +60,22 @@ class Settings(BaseSettings):
     ollama_embed_model: str = "embeddinggemma:latest"
     ollama_vision_model: str = "devstral-small-2:latest"
 
+    # MCP Coordinator Configuration
+    mcp_coordinator_host: str = "localhost"
+    mcp_coordinator_port: int = 8001
+    mcp_coordinator_url: str = "http://localhost:8001"
+
+    @field_validator("mcp_coordinator_url", mode="before")
+    @classmethod
+    def assemble_mcp_coordinator_url(cls, v, info):
+        """Assemble MCP coordinator URL from components."""
+        if isinstance(v, str) and v != "http://localhost:8001":
+            return v
+        values = info.data
+        host = values.get("mcp_coordinator_host", "localhost")
+        port = values.get("mcp_coordinator_port", 8001)
+        return f"http://{host}:{port}"
+
     # File Handling
     max_upload_size: int = 50 * 1024 * 1024  # 50MB
     allowed_extensions: str = ".pdf,.txt,.jpg,.jpeg,.png"

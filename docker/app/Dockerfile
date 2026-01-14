@@ -20,7 +20,7 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy requirements and install Python dependencies
-COPY src/requirements.txt .
+COPY ../src/requirements.txt .
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt && \
     pip install prometheus-client==0.19.0 starlette==0.27.0 starlette-exporter==0.15.0
@@ -69,7 +69,7 @@ RUN mkdir -p /app/data/uploads /app/data/processed /app/logs && \
 WORKDIR /app
 
 # Copy application code
-COPY src/ /app/
+COPY ../src/ /app/
 
 # Change ownership of application files
 RUN chown -R raguser:raguser /app

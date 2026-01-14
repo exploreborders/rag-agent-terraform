@@ -4,7 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Query
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import Counter, Histogram, Gauge, CollectorRegistry
@@ -30,8 +30,9 @@ RAG_DOCUMENTS_PROCESSED = None
 RAG_QUERIES_PROCESSED = None
 HTTP_REQUESTS_TOTAL = None
 
-# Global RAG agent instance
+# Global instances
 rag_agent: Optional[RAGAgent] = None
+multi_agent_graph = None  # LangGraph Multi-Agent System
 
 
 @asynccontextmanager
@@ -147,35 +148,62 @@ async def root():
 
 @app.get("/health", response_model=HealthStatus)
 async def health_check():
-    """Health check endpoint."""
+    """Health check endpoint with Multi-Agent support."""
     try:
-        # Check RAG agent health
-        if rag_agent is None:
-            raise HTTPException(status_code=503, detail="RAG Agent not initialized")
+        services_status = {}
 
-        # Check vector store connection
-        await rag_agent.vector_store.health_check()
+        # Check legacy RAG agent health
+        if rag_agent is not None:
+            try:
+                await rag_agent.vector_store.health_check()
+                services_status["vector_store"] = "healthy"
+            except Exception:
+                services_status["vector_store"] = "unhealthy"
 
-        # Check Ollama client
-        await rag_agent.ollama_client.health_check()
+            try:
+                await rag_agent.ollama_client.health_check()
+                services_status["ollama_client"] = "healthy"
+            except Exception:
+                services_status["ollama_client"] = "unhealthy"
 
-        from datetime import datetime
+            services_status["rag_agent"] = "healthy"
+        else:
+            services_status["rag_agent"] = "not_initialized"
 
-        return HealthStatus(
-            status="healthy",
-            timestamp=datetime.utcnow().isoformat()[:19] + "Z",
-            version=settings.version,
-            services={
-                "rag_agent": "healthy",
-                "vector_store": "healthy",
-                "ollama_client": "healthy",
-            },
+        # Check Multi-Agent System
+        services_status["multi_agent_system"] = (
+            "healthy" if multi_agent_graph else "not_initialized"
+        )
+
+        # Check MCP Coordinator
+        try:
+            import httpx
+
+            mcp_url = f"{settings.mcp_coordinator_url}/health"
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(mcp_url)
+                if response.status_code == 200:
+                    services_status["mcp_coordinator"] = "healthy"
+                else:
+                    services_status["mcp_coordinator"] = "unhealthy"
+        except Exception:
+            services_status["mcp_coordinator"] = "unreachable"
+
+        # Determine overall status
+        critical_services = ["vector_store", "ollama_client", "rag_agent"]
+        overall_status = (
+            "healthy"
+            if all(
+                services_status.get(service) == "healthy"
+                for service in critical_services
+            )
+            else "degraded"
         )
 
         from datetime import datetime
 
         return HealthStatus(
-            status="healthy",
+            status=overall_status,
             timestamp=datetime.utcnow().isoformat()[:19] + "Z",
             version=settings.version,
             services=services_status,
@@ -283,7 +311,7 @@ async def delete_document(document_id: str):
 
 @app.post("/query", response_model=QueryResponse)
 async def query_documents(request: QueryRequest):
-    """Query the RAG system."""
+    """Query the RAG system (Legacy Endpoint)."""
     try:
         if rag_agent is None:
             raise HTTPException(status_code=503, detail="RAG Agent not initialized")
@@ -308,10 +336,191 @@ async def query_documents(request: QueryRequest):
         )
 
 
+@app.post("/agents/query")
+async def multi_agent_query(request: QueryRequest):
+    """Multi-Agenten-Abfrage mit LangGraph (Phase 1)."""
+    try:
+        if multi_agent_graph is None:
+            # Fallback to legacy system
+            logger.warning("Multi-Agent System not available, using legacy RAG")
+            return await query_documents(request)
+
+        # Create initial state
+        from app.multi_agent_state import create_initial_state
+
+        initial_state = create_initial_state(
+            query=request.query,
+            user_id="api_user",  # Simplified for Phase 1
+            user_level="standard",
+        )
+
+        # Add query parameters
+        if request.document_ids:
+            initial_state["allowed_doc_ids"] = request.document_ids
+
+        # Execute multi-agent graph
+        logger.info(f"Executing multi-agent query: {request.query}")
+        result = await multi_agent_graph.ainvoke(initial_state)
+
+        # Format response
+        response = {
+            "query": request.query,
+            "answer": result.get("final_response", "No response generated"),
+            "sources": result.get("sources", []),
+            "confidence_score": result.get("confidence_score", 0.0),
+            "processing_time": result.get("processing_time", 0.0),
+            "total_sources": len(result.get("sources", [])),
+            # Phase 1 specific fields
+            "agent_metrics": result.get("agent_metrics", {}),
+            "mcp_results": {
+                "search": result.get("mcp_search_results"),
+                "code": result.get("mcp_code_results"),
+            },
+            "phase": "multi_agent_v1",
+        }
+
+        # Update metrics
+        if RAG_QUERIES_PROCESSED:
+            RAG_QUERIES_PROCESSED.inc()
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Multi-agent query failed: {e}")
+        # Fallback to legacy system
+        logger.info("Falling back to legacy RAG system")
+        return await query_documents(request)
+
+
+@app.get("/agents/status")
+async def agent_system_status():
+    """Status des Multi-Agenten-Systems."""
+    try:
+        status_info = {
+            "multi_agent_enabled": multi_agent_graph is not None,
+            "legacy_rag_available": rag_agent is not None,
+            "mcp_coordinator_connected": False,
+            "agents": {
+                "query_processor": "placeholder",
+                "retrieval_agent": "placeholder",
+                "mcp_search_agent": "placeholder",
+                "mcp_code_agent": "placeholder",
+                "results_aggregator": "placeholder",
+                "response_generator": "placeholder",
+                "validation_agent": "placeholder",
+            },
+        }
+
+        # Check MCP Coordinator connectivity
+        try:
+            import httpx
+
+            mcp_url = f"{settings.mcp_coordinator_url}/health"
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(mcp_url)
+                if response.status_code == 200:
+                    status_info["mcp_coordinator_connected"] = True
+        except Exception:
+            pass
+
+        return status_info
+
+    except Exception as e:
+        logger.error(f"Agent status check failed: {e}")
+        return {"error": str(e), "multi_agent_enabled": False}
+
+
+@app.post("/test-mcp-tools")
+async def test_mcp_tools(
+    query: str = Query("machine learning", description="Search query"),
+):
+    """Test MCP Tools: Paper Search and DuckDuckGo Search."""
+    try:
+        import httpx
+
+        results = {
+            "query": query,
+            "tools_tested": ["search", "search_semantic", "get_current_time"],
+            "results": {},
+        }
+
+        # Test Web Search (DuckDuckGo via MCP Toolkit)
+        try:
+            mcp_url = f"{settings.mcp_coordinator_url}/tools/search/execute"
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(mcp_url, json={"query": query})
+                if response.status_code == 200:
+                    results["results"]["web_search"] = response.json()
+                else:
+                    results["results"]["web_search"] = {
+                        "error": f"HTTP {response.status_code}"
+                    }
+        except Exception as e:
+            results["results"]["web_search"] = {"error": str(e)}
+
+        # Test Academic Paper Search (Semantic Scholar)
+        try:
+            mcp_url = f"{settings.mcp_coordinator_url}/tools/search_semantic/execute"
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.post(mcp_url, json={"query": query})
+                if response.status_code == 200:
+                    results["results"]["academic_papers"] = response.json()
+                else:
+                    results["results"]["academic_papers"] = {
+                        "error": f"HTTP {response.status_code}"
+                    }
+        except Exception as e:
+            results["results"]["academic_papers"] = {"error": str(e)}
+
+        # Test Time Reference
+        try:
+            mcp_url = f"{settings.mcp_coordinator_url}/tools/get_current_time/execute"
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(mcp_url, json={"timezone": "UTC"})
+                if response.status_code == 200:
+                    results["results"]["time_reference"] = response.json()
+                else:
+                    results["results"]["time_reference"] = {
+                        "error": f"HTTP {response.status_code}"
+                    }
+        except Exception as e:
+            results["results"]["time_reference"] = {"error": str(e)}
+
+        return results
+
+    except Exception as e:
+        logger.error(f"MCP tools test failed: {e}")
+        return {"error": str(e)}
+
+
 @app.on_event("startup")
 async def startup_event():
     """Application startup event."""
     logger.info("RAG Agent application started")
+
+    # Initialize Multi-Agent System (Phase 1)
+    global multi_agent_graph
+    try:
+        # Import multi-agent modules
+        from app.multi_agent_graph import create_docker_multi_agent_graph
+        from app.graph_persistence import setup_graph_persistence
+        from app.mcp_client import mcp_client
+
+        # Setup graph persistence
+        checkpointer = await setup_graph_persistence(settings.database_url)
+
+        # Initialize MCP client
+        await mcp_client.connect()
+
+        # Create and compile multi-agent graph
+        graph = create_docker_multi_agent_graph(mcp_client)
+        multi_agent_graph = graph.compile(checkpointer=checkpointer)
+
+        logger.info("Multi-Agent System initialized successfully")
+
+    except Exception as e:
+        logger.warning(f"Multi-Agent System initialization failed: {e}")
+        logger.info("Continuing with legacy RAG system only")
 
 
 @app.on_event("shutdown")

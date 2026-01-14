@@ -6,8 +6,11 @@ This is a Terraform-managed local infrastructure for an agentic RAG (Retrieval-A
 
 The project consists of:
 - **Backend**: FastAPI application with document processing and RAG capabilities
-- **Frontend**: React/TypeScript application (in `/frontend` directory)
 - **Infrastructure**: Terraform-managed Docker containers and networking
+- **Testing**: Comprehensive pytest suite with unit and integration tests
+- **Code Quality**: Black, isort, flake8, and mypy for consistent code formatting and type safety
+
+**Note**: No Cursor rules (.cursor/rules/) or Copilot instructions (.github/copilot-instructions.md) were found in this repository.
 
 ## 🛠️ Development Commands
 
@@ -84,7 +87,7 @@ cd frontend && npm run test:ci
 
 ### Testing Commands
 ```bash
-# Run all tests
+# Run all tests (unit + integration with coverage)
 make test
 # or
 cd src && python -m pytest tests/ -v --cov=app --cov-report=html
@@ -94,23 +97,44 @@ make test-unit
 # or
 cd src && python -m pytest tests/ -v -m "not integration"
 
-# Run integration tests only
+# Run integration tests only (requires infrastructure)
 make test-integration
 # or
 cd src && python -m pytest tests/ -v -m "integration"
 
+# Run quick integration test (verify infrastructure)
+make test-integration-quick
+# or
+cd src && python -m pytest tests/integration/test_simple_integration.py -v
+
 # Run specific test file
 cd src && python -m pytest tests/test_api.py -v
 
-# Run single test function
+# Run single test function (most common for development)
 cd src && python -m pytest tests/test_api.py::TestAPIIntegration::test_health_endpoint -v
+
+# Run single test class
+cd src && python -m pytest tests/test_api.py::TestAPIIntegration -v
+
+# Run tests by marker
+cd src && python -m pytest tests/ -v -m "asyncio"  # async tests only
+cd src && python -m pytest tests/ -v -m "slow"    # slow tests only
 
 # Run tests with coverage report
 make test-cov
 # or
+cd src && python -m pytest tests/ -m "not integration" --cov=app --cov-report=term-missing --cov-report=html
+
+# Run all tests with coverage (requires infrastructure)
+make test-cov-all
+# or
 cd src && python -m pytest tests/ --cov=app --cov-report=term-missing --cov-report=html
 
+# Debug failing test
+cd src && python -m pytest tests/test_api.py::TestAPIIntegration::test_health_endpoint -v -s --pdb
+
 # Run tests in parallel (requires pytest-xdist)
+pip install pytest-xdist
 cd src && python -m pytest tests/ -n auto
 ```
 
@@ -152,13 +176,49 @@ cd src && mypy .
 make lint
 # or
 cd src && black . && isort . && flake8 . && mypy .
+
+# Check code quality without making changes
+make check
+# or
+cd src && black --check . && isort --check-only . && flake8 . && mypy .
+
+# Run pre-commit hooks
+make pre-commit
+# or
+cd src && pre-commit run --all-files
 ```
 
 #### Code Formatting Configuration
 - **Black**: 88 character line length, Python 3.11+ syntax
-- **Flake8**: 100 character line length (E501 error ignored)
-- **isort**: Black-compatible import sorting
-- **MyPy**: Strict type checking enabled
+- **Flake8**: 100 character line length (E501 error ignored), strict mode
+- **isort**: Black-compatible import sorting, 88 chars, multi-line output 3
+- **MyPy**: Strict type checking enabled (disallow_untyped_defs, no_implicit_optional, etc.)
+
+#### Dependency Injection Patterns
+```python
+from fastapi import Depends
+from app.vector_store import VectorStore
+from app.ollama_client import OllamaClient
+
+# Dependency functions in dependencies.py
+async def get_vector_store() -> VectorStore:
+    """Get configured vector store instance."""
+    return VectorStore(settings.database_url)
+
+async def get_ollama_client() -> OllamaClient:
+    """Get configured Ollama client instance."""
+    return OllamaClient(base_url=settings.ollama_base_url)
+
+# Usage in routers
+@router.post("/query")
+async def query_rag(
+    request: QueryRequest,
+    vector_store: VectorStore = Depends(get_vector_store),
+    ollama_client: OllamaClient = Depends(get_ollama_client),
+) -> QueryResponse:
+    """Query the RAG system with dependency injection."""
+    # Implementation uses injected dependencies
+```
 
 ### Document Processing & Data Management
 ```bash
@@ -267,6 +327,71 @@ def load_document(file_path: Path) -> Document:
         raise DocumentProcessingError(f"Failed to load document: {str(e)}")
 ```
 
+#### Custom Exceptions
+```python
+# exceptions.py
+from typing import Optional, Dict, Any
+
+class RAGException(Exception):
+    """Base exception for RAG system errors."""
+
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message)
+        self.details = details or {}
+
+class DocumentProcessingError(RAGException):
+    """Raised when document processing fails."""
+    pass
+
+class VectorStoreError(RAGException):
+    """Raised when vector store operations fail."""
+    pass
+
+class OllamaClientError(RAGException):
+    """Raised when Ollama client operations fail."""
+    pass
+```
+
+#### Logging with Structlog
+```python
+import logging
+import structlog
+
+# Configure structured logging in main.py
+logging.basicConfig(level=getattr(logging, settings.log_level.upper()))
+shared_processors = [
+    structlog.contextvars.merge_contextvars,
+    structlog.processors.add_log_level,
+    structlog.processors.TimeStamper(fmt="iso"),
+    structlog.processors.JSONRenderer(),
+]
+structlog.configure(
+    processors=shared_processors,
+    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+    context_class=dict,
+    logger_factory=structlog.WriteLoggerFactory(),
+    cache_logger_on_first_use=True,
+)
+
+logger = structlog.get_logger()
+
+# Usage in functions
+logger.info(
+    "Document uploaded and processed",
+    filename=file.filename,
+    file_size=file_size,
+    chunks_count=result.chunks_count,
+    processing_time=processing_time,
+)
+
+logger.error(
+    "Document processing failed",
+    filename=file.filename,
+    error=str(e),
+    exc_info=True
+)
+```
+
 #### Async/Await Patterns
 ```python
 import asyncio
@@ -283,6 +408,44 @@ class VectorStore:
         # Implementation with proper async handling
         async with self.ollama_client:
             return await self.ollama_client.embed(text)
+
+# FastAPI async endpoint patterns
+from fastapi import APIRouter, HTTPException, Depends
+from typing import Optional
+
+router = APIRouter()
+
+@router.post("/documents/upload")
+async def upload_document(
+    file: UploadFile = File(...),
+    chunk_size: int = Query(default=1000, ge=100, le=5000),
+    vector_store: VectorStore = Depends(get_vector_store),
+) -> DocumentResponse:
+    """Upload and process a document asynchronously."""
+    try:
+        # Process file asynchronously
+        content = await file.read()
+
+        # Validate and process
+        document = await process_document_async(
+            content=content,
+            filename=file.filename,
+            chunk_size=chunk_size,
+            vector_store=vector_store
+        )
+
+        return DocumentResponse(
+            id=document.id,
+            metadata=document.metadata,
+            status="processed",
+            chunks_count=document.chunks_count,
+            embeddings_count=document.embeddings_count
+        )
+
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except ProcessingError as e:
+        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 ```
 
 #### Logging with Structlog
@@ -499,10 +662,66 @@ python_functions = ["test_*"]
 asyncio_mode = "auto"
 markers = [
     "unit: marks tests as unit tests",
-    "integration: marks tests as integration tests",
+    "integration: marks tests that require real external services",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "database: marks tests that require database connectivity",
+    "redis: marks tests that require Redis connectivity",
     "asyncio: marks tests as async",
 ]
+```
+
+### Testing Patterns and Fixtures
+```python
+# conftest.py - Shared fixtures
+import pytest
+from fastapi.testclient import TestClient
+from app.main import app
+
+@pytest.fixture
+def client():
+    """Test client for FastAPI application."""
+    return TestClient(app)
+
+@pytest.fixture
+async def async_client():
+    """Async test client for FastAPI application."""
+    from httpx import AsyncClient
+    async with AsyncClient(app=app, base_url="http://testserver") as client:
+        yield client
+
+# Unit test with mocking
+import pytest
+from unittest.mock import Mock, AsyncMock, patch
+from fastapi.testclient import TestClient
+
+from app.main import app
+from app.models import HealthStatus
+
+class TestAPIIntegration:
+    """Integration tests for API endpoints."""
+
+    @pytest.fixture
+    def client(self):
+        """Test client for FastAPI application."""
+        return TestClient(app)
+
+    @pytest.mark.asyncio
+    async def test_health_endpoint_success(self, client):
+        """Test health check endpoint when system is healthy."""
+        # Mock dependencies
+        with patch("app.main.rag_agent") as mock_agent:
+            # Configure mocks
+            mock_agent.vector_store.health_check = AsyncMock()
+            mock_agent.ollama_client.health_check = AsyncMock()
+
+            response = client.get("/health")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "healthy"
+            assert "timestamp" in data
+            assert "version" in data
+            assert "services" in data
 ```
 
 ### Test Coverage Requirements

@@ -15,6 +15,7 @@ locals {
   postgres_exporter_container_name = "${local.project_name}-postgres-exporter-${local.environment}"
   redis_exporter_container_name    = "${local.project_name}-redis-exporter-${local.environment}"
   node_exporter_container_name     = "${local.project_name}-node-exporter-${local.environment}"
+  mcp_coordinator_container_name   = "${local.project_name}-mcp-coordinator-${local.environment}"
 
   # Network configuration
   network_name = var.network_name != "" ? var.network_name : "${local.project_name}-network"
@@ -32,6 +33,7 @@ locals {
   postgres_exporter_image = "prometheuscommunity/postgres-exporter:latest"
   redis_exporter_image    = "oliver006/redis_exporter:latest"
   node_exporter_image     = "prom/node-exporter:latest"
+  mcp_coordinator_image   = "${local.project_name}-mcp-coordinator:${var.app_image_tag}"
 
   # Common labels for all resources
   common_tags = {
@@ -98,6 +100,13 @@ locals {
     retries  = var.healthcheck_retries
   }
 
+  mcp_coordinator_healthcheck = {
+    test     = ["CMD", "curl", "-f", "http://localhost:${var.mcp_coordinator_port}/health"]
+    interval = var.healthcheck_interval
+    timeout  = var.healthcheck_timeout
+    retries  = var.healthcheck_retries
+  }
+
   # Volume configurations
   postgres_volumes = [
     {
@@ -157,4 +166,22 @@ locals {
       container_path = "/var/lib/grafana/dashboards"
     }
   ]
+
+  # MCP Volumes
+  mcp_volumes = [
+    {
+      host_path      = abspath("${path.root}/../data/mcp")
+      container_path = "/app/data"
+    }
+  ]
+
+  # Agent Message Queue Channels
+  agent_message_channels = {
+    query_processor = "rag:agents:query_processor"
+    retrieval_agent = "rag:agents:retrieval"
+    mcp_agent       = "rag:agents:mcp"
+    aggregator      = "rag:agents:aggregator"
+    validator       = "rag:agents:validator"
+    coordinator     = "rag:coordinator"
+  }
 }

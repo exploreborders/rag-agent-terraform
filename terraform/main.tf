@@ -92,22 +92,33 @@ resource "docker_container" "redis" {
   name  = local.redis_container_name
   image = docker_image.redis.image_id
 
-  # Command to start Redis with append-only file
-  command = ["redis-server", "--appendonly", "yes"]
+  # Command to start Redis with configuration file
+  command = ["redis-server", "/etc/redis/redis.conf"]
 
   # Ports
   ports {
     internal = 6379
     external = var.redis_port
   }
+  # Additional port for message queue operations
+  ports {
+    internal = 6380
+    external = 6380
+  }
 
-  # Volumes for data persistence
+  # Volumes for data persistence and configuration
   dynamic "volumes" {
     for_each = local.redis_volumes
     content {
       host_path      = volumes.value.host_path
       container_path = volumes.value.container_path
     }
+  }
+
+  # Redis configuration file
+  volumes {
+    host_path      = abspath("${path.root}/../redis/redis.conf")
+    container_path = "/etc/redis/redis.conf"
   }
 
   # Memory limits (optional - commented out for basic functionality)
@@ -166,7 +177,12 @@ resource "docker_container" "app" {
     "REDIS_URL=${local.redis_url}",
     "POSTGRES_HOST=${local.postgres_container_name}",
     "REDIS_HOST=${local.redis_container_name}",
-    "OLLAMA_BASE_URL=http://host.docker.internal:11434"
+    "OLLAMA_BASE_URL=http://host.docker.internal:11434",
+    "MCP_COORDINATOR_URL=http://${local.mcp_coordinator_container_name}:${var.mcp_coordinator_port}",
+    "LANGGRAPH_CHECKPOINT_URL=${local.database_url}",
+    "AGENT_MESSAGE_CHANNELS=${jsonencode(local.agent_message_channels)}",
+    "MULTI_AGENT_ENABLED=true",
+    "REDIS_MESSAGE_QUEUE_ENABLED=true"
   ]
 
   # Ports
@@ -213,13 +229,97 @@ resource "docker_container" "app" {
     }
   }
 
-  # Dependencies - wait for database and cache to be ready
+  # Dependencies - wait for database, cache, and MCP coordinator to be ready
   depends_on = [
     docker_container.postgres,
+    docker_container.redis,
+    docker_container.mcp_coordinator,
+    docker_network.rag_network
+  ]
+}
+
+# MCP Coordinator Image
+resource "docker_image" "mcp_coordinator" {
+  name = local.mcp_coordinator_image
+
+  build {
+    context    = "${path.root}/../mcp-coordinator"
+    dockerfile = "Dockerfile"
+    tag        = [local.mcp_coordinator_image]
+  }
+}
+
+# MCP Coordinator Container
+resource "docker_container" "mcp_coordinator" {
+  name  = local.mcp_coordinator_container_name
+  image = docker_image.mcp_coordinator.image_id
+
+  # Environment variables
+  env = [
+    "REDIS_URL=${local.redis_url}",
+    "DOCKER_HOST=unix:///var/run/docker.sock",
+    "MCP_COORDINATOR_PORT=${var.mcp_coordinator_port}",
+    "AGENT_MESSAGE_CHANNELS=${jsonencode(local.agent_message_channels)}"
+  ]
+
+  # Ports
+  ports {
+    internal = var.mcp_coordinator_port
+    external = var.mcp_coordinator_port
+  }
+
+  # Docker socket for MCP Tool Container Management
+  volumes {
+    host_path      = "/var/run/docker.sock"
+    container_path = "/var/run/docker.sock"
+  }
+
+  # Data volumes
+  dynamic "volumes" {
+    for_each = local.mcp_volumes
+    content {
+      host_path      = volumes.value.host_path
+      container_path = volumes.value.container_path
+    }
+  }
+
+  # Memory limits
+  memory      = var.mcp_coordinator_memory_limit
+  memory_swap = var.mcp_coordinator_memory_swap_limit
+
+  # Health check
+  healthcheck {
+    test         = local.mcp_coordinator_healthcheck.test
+    interval     = local.mcp_coordinator_healthcheck.interval
+    timeout      = local.mcp_coordinator_healthcheck.timeout
+    retries      = local.mcp_coordinator_healthcheck.retries
+    start_period = "60s"
+  }
+
+  # Networking
+  networks_advanced {
+    name = docker_network.rag_network.name
+  }
+
+  # Restart policy
+  restart = "unless-stopped"
+
+  # Labels
+  dynamic "labels" {
+    for_each = local.common_tags
+    content {
+      label = lower(replace(labels.key, "_", "-"))
+      value = labels.value
+    }
+  }
+
+  # Dependencies - wait for Redis and network
+  depends_on = [
     docker_container.redis,
     docker_network.rag_network
   ]
 }
+
 
 # Prometheus for metrics collection
 resource "docker_image" "prometheus" {
