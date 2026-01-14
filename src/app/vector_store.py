@@ -452,7 +452,19 @@ class VectorStore:
                     "filename": row["filename"],
                     "content_type": row["content_type"],
                     "size": row["size"],
-                    "uploaded_at": row["upload_time"].isoformat(),
+                    "uploaded_at": (
+                        row["upload_time"]
+                        .isoformat()
+                        .replace("+00:00", "Z")
+                        .replace("+01:00", "Z")
+                        if hasattr(row["upload_time"], "isoformat")
+                        and row["upload_time"] is not None
+                        else str(row["upload_time"])
+                        .replace("+00:00", "Z")
+                        .replace("+01:00", "Z")
+                        if row["upload_time"] is not None
+                        else "2024-01-01T00:00:00Z"
+                    ),
                     "status": "completed",  # Documents in DB are successfully processed
                     "chunks_count": int(row["chunks_count"]),
                     "page_count": row["page_count"],

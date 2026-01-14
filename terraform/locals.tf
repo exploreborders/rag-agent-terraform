@@ -117,6 +117,10 @@ locals {
     {
       host_path      = abspath("${path.root}/../data")
       container_path = "/app/data"
+    },
+    {
+      host_path      = abspath("${path.root}/../src")
+      container_path = "/app"
     }
   ]
 

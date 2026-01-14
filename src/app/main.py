@@ -235,12 +235,6 @@ async def list_documents(
 ):
     """List all uploaded documents."""
     try:
-        # For now, return empty array if RAG agent is not available
-        # This allows the frontend to work even when database is not connected
-        if rag_agent is None:
-            logger.warning("RAG Agent not initialized, returning empty documents list")
-            return []
-
         # Get documents from RAG agent
         documents_data = await rag_agent.list_documents(limit=limit, offset=offset)
 
@@ -252,7 +246,7 @@ async def list_documents(
                 "filename": doc_data.get("filename", ""),
                 "content_type": doc_data.get("content_type", ""),
                 "size": doc_data.get("size", 0),
-                "uploaded_at": doc_data.get("upload_time", ""),
+                "uploaded_at": doc_data.get("uploaded_at", ""),
                 "status": doc_data.get("status", "processed"),
                 "chunks_count": doc_data.get("chunks_count", 0),
             }
@@ -265,6 +259,26 @@ async def list_documents(
         logger.error(f"Failed to list documents: {e}")
         # Return empty array instead of error to keep frontend working
         return []
+
+
+@app.delete("/documents/{document_id}")
+async def delete_document(document_id: str):
+    """Delete a document and its chunks."""
+    try:
+        if rag_agent is None:
+            raise HTTPException(status_code=503, detail="RAG Agent not initialized")
+
+        success = await rag_agent.delete_document(document_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        return {"message": "Document deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete document {document_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete document")
 
 
 @app.post("/query", response_model=QueryResponse)

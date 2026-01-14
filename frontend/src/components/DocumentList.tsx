@@ -44,9 +44,13 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      setError(null);
       const docs = await ApiService.getDocuments();
-      setDocuments(docs);
+      console.log('Received documents:', docs?.length || 0, 'documents');
+      if (docs && docs.length > 0) {
+        console.log('Sample document:', docs[0]);
+        console.log('First document uploaded_at:', `"${docs[0].uploaded_at}"`, 'Type:', typeof docs[0].uploaded_at);
+      }
+      setDocuments(docs || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load documents');
     } finally {
@@ -97,8 +101,72 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+  const formatDate = (dateString: string | undefined | null) => {
+    console.log('formatDate called with:', `"${dateString}"`, 'Type:', typeof dateString);
+    // Handle empty/null/undefined values
+    if (dateString === null || dateString === undefined || dateString === '') {
+      console.log('Returning "Not uploaded" for null/undefined/empty value');
+      return 'Not uploaded';
+    }
+
+    // Ensure it's a string
+    const dateStr = String(dateString).trim();
+    if (!dateStr) {
+      return 'Not uploaded';
+    }
+
+    try {
+      // Try different parsing strategies
+      let date: Date | null = null;
+
+      // Strategy 1: Direct Date constructor (handles ISO strings)
+      date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleString();
+      }
+
+      // Strategy 2: Handle common backend formats
+      const formats = [
+        // Remove microseconds: "2024-01-14T16:11:53.123456" -> "2024-01-14T16:11:53"
+        dateStr.split('.')[0],
+        // Add Z if missing: "2024-01-14T16:11:53" -> "2024-01-14T16:11:53Z"
+        dateStr + (dateStr.includes('Z') ? '' : 'Z'),
+        // Handle ISO with timezone: "2024-01-14T16:11:53+00:00" -> "2024-01-14T16:11:53Z"
+        dateStr.replace(/\+.*$/, 'Z'),
+        // Replace space with T and add Z
+        dateStr.replace(' ', 'T') + (dateStr.includes('Z') ? '' : 'Z'),
+      ];
+
+      for (const format of formats) {
+        date = new Date(format);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString();
+        }
+      }
+
+      // Strategy 3: Manual parsing for common patterns
+      const patterns = [
+        /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z?$/,
+        /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/,
+      ];
+
+      for (const pattern of patterns) {
+        const match = dateStr.match(pattern);
+        if (match) {
+          const [, year, month, day, hour, minute, second] = match;
+          date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day),
+                         parseInt(hour), parseInt(minute), parseInt(second));
+          if (!isNaN(date.getTime())) {
+            return date.toLocaleString();
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('Error parsing date:', dateStr, error);
+    }
+
+    return 'Invalid date format';
   };
 
   if (loading) {
@@ -192,11 +260,11 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       {doc.chunks_count || 'N/A'}
                     </Typography>
                   </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {formatDate(doc.uploaded_at)}
-                    </Typography>
-                  </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {formatDate(doc.uploaded_at) || 'Not available'}
+                        </Typography>
+                      </TableCell>
                   <TableCell align="right">
                     <Tooltip title="Delete document">
                       <IconButton
@@ -204,6 +272,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                         color="error"
                         onClick={() => handleDeleteDocument(doc.id)}
                         disabled={deletingId === doc.id}
+                        data-testid={`delete-document-${doc.id}`}
                       >
                         {deletingId === doc.id ? (
                           <CircularProgress size={20} />
