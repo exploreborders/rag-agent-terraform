@@ -169,6 +169,8 @@ describe('QueryInterface', () => {
         document_ids: undefined,
         top_k: 5,
       });
+    });
+    await waitFor(() => {
       expect(mockOnQueryResult).toHaveBeenCalledWith(mockResponse);
     });
   });

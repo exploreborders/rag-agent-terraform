@@ -15,7 +15,9 @@ import { ApiService } from '../services/api';
 import { DocumentUploadResponse } from '../types/api';
 
 interface DocumentUploadProps {
+  // eslint-disable-next-line no-unused-vars
   onUploadSuccess: (document: DocumentUploadResponse) => void;
+  // eslint-disable-next-line no-unused-vars
   onUploadError: (error: string) => void;
 }
 

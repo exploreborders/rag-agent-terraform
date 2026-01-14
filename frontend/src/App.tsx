@@ -100,7 +100,7 @@ function App() {
     }
   };
 
-  const handleUploadSuccess = (response: DocumentUploadResponse) => {
+  const handleUploadSuccess = (_response: DocumentUploadResponse) => {
     setRefreshTrigger(prev => prev + 1);
     setUploadError(null);
   };

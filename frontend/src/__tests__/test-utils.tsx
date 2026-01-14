@@ -44,7 +44,9 @@ export const mockApiService = {
 // Mock file for testing
 export const createMockFile = (name: string = 'test.pdf', size: number = 1024, type: string = 'application/pdf'): File => {
   const blob = new Blob(['test content'], { type });
-  return new File([blob], name, { type, size });
+  const file = new File([blob], name, { type });
+  Object.defineProperty(file, 'size', { value: size });
+  return file;
 };
 
 // Mock document data

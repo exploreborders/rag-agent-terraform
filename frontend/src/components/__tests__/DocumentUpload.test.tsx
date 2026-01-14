@@ -44,7 +44,8 @@ describe('DocumentUpload', () => {
     const file = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
     mockedApiService.uploadDocument.mockResolvedValue({
       id: 'doc-123',
-      message: 'Upload successful',
+      message: 'Document "test.pdf" uploaded successfully',
+      status: 'success',
     });
 
     render(
@@ -92,6 +93,8 @@ describe('DocumentUpload', () => {
 
     await waitFor(() => {
       expect(mockedApiService.uploadDocument).toHaveBeenCalledWith(file);
+    });
+    await waitFor(() => {
       expect(mockOnUploadSuccess).toHaveBeenCalledWith(mockResponse);
     });
   });

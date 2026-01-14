@@ -81,7 +81,9 @@ describe('DocumentList', () => {
 
     await waitFor(() => {
       expect(screen.getByText('150')).toBeInTheDocument();
-      expect(screen.getByText('N/A')).toBeInTheDocument(); // For processing and failed docs
+    });
+    await waitFor(() => {
+      expect(screen.getAllByText('N/A')).toHaveLength(2); // For processing and failed docs
     });
   });
 
@@ -92,7 +94,9 @@ describe('DocumentList', () => {
       // PDF icons should be present for PDF files
       const pdfIcons = screen.getAllByTestId('PictureAsPdfIcon');
       expect(pdfIcons).toHaveLength(2); // document1.pdf and document3.pdf
+    });
 
+    await waitFor(() => {
       // Description icon should be present for text file
       expect(screen.getByTestId('DescriptionIcon')).toBeInTheDocument();
     });
@@ -113,6 +117,8 @@ describe('DocumentList', () => {
 
     await waitFor(() => {
       expect(mockedApiService.deleteDocument).toHaveBeenCalledWith('doc-1');
+    });
+    await waitFor(() => {
       expect(mockOnDocumentDeleted).toHaveBeenCalled();
     });
   });
@@ -173,6 +179,8 @@ describe('DocumentList', () => {
 
     await waitFor(() => {
       expect(screen.getByText('No documents uploaded yet')).toBeInTheDocument();
+    });
+    await waitFor(() => {
       expect(screen.getByText('Upload some documents to get started with RAG queries')).toBeInTheDocument();
     });
   });

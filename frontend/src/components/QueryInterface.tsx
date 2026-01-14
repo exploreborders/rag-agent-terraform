@@ -20,7 +20,9 @@ import { QueryRequest, QueryResponse, Document } from '../types/api';
 
 interface QueryInterfaceProps {
   documents: Document[];
+  // eslint-disable-next-line no-unused-vars
   onQueryResult: (result: QueryResponse) => void;
+  // eslint-disable-next-line no-unused-vars
   onQueryError: (error: string) => void;
 }
 
