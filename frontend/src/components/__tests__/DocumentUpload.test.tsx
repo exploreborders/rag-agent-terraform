@@ -40,8 +40,12 @@ describe('DocumentUpload', () => {
     expect(screen.getByText(/Maximum size: 50MB/)).toBeInTheDocument();
   });
 
-  it('handles file drop correctly', async () => {
+  it('handles file selection correctly', async () => {
     const file = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
+    mockedApiService.uploadDocument.mockResolvedValue({
+      id: 'doc-123',
+      message: 'Upload successful',
+    });
 
     render(
       <DocumentUpload
@@ -50,14 +54,11 @@ describe('DocumentUpload', () => {
       />
     );
 
-    const dropzone = screen.getByText('Drag & drop documents here').closest('div');
+    // Find the hidden file input and simulate file selection
+    const fileInput = screen.getByTestId('file-input') as HTMLInputElement;
 
-    // Simulate file drop
-    fireEvent.drop(dropzone!, {
-      dataTransfer: {
-        files: [file],
-      },
-    });
+    // Simulate file selection
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
       expect(screen.getByText('test.pdf')).toBeInTheDocument();
@@ -108,13 +109,9 @@ describe('DocumentUpload', () => {
       />
     );
 
-    // Drop file
-    const dropzone = screen.getByText('Drag & drop documents here').closest('div');
-    fireEvent.drop(dropzone!, {
-      dataTransfer: {
-        files: [file],
-      },
-    });
+    // Select file
+    const fileInput = screen.getByTestId('file-input') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
     // Click upload button
     const uploadButton = screen.getByText('Upload Files');
@@ -140,13 +137,9 @@ describe('DocumentUpload', () => {
       />
     );
 
-    // Drop files
-    const dropzone = screen.getByText('Drag & drop documents here').closest('div');
-    fireEvent.drop(dropzone!, {
-      dataTransfer: {
-        files: [file1, file2],
-      },
-    });
+    // Select files
+    const fileInput = screen.getByTestId('file-input') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file1, file2] } });
 
     // Upload
     const uploadButton = screen.getByText('Upload Files');
@@ -170,13 +163,9 @@ describe('DocumentUpload', () => {
       />
     );
 
-    // Drop file
-    const dropzone = screen.getByText('Drag & drop documents here').closest('div');
-    fireEvent.drop(dropzone!, {
-      dataTransfer: {
-        files: [file],
-      },
-    });
+    // Select file
+    const fileInput = screen.getByTestId('file-input') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
     expect(screen.getByText('test.pdf')).toBeInTheDocument();
 
@@ -213,15 +202,11 @@ describe('DocumentUpload', () => {
       />
     );
 
-    // Drop file
-    const dropzone = screen.getByText('Drag & drop documents here').closest('div');
-    fireEvent.drop(dropzone!, {
-      dataTransfer: {
-        files: [file],
-      },
-    });
+    // Select file
+    const fileInput = screen.getByTestId('file-input') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
-    // Start upload
+    // Click upload button
     const uploadButton = screen.getByText('Upload Files');
     fireEvent.click(uploadButton);
 

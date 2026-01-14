@@ -32,6 +32,9 @@
     "test": "react-scripts test",
     "test:ci": "react-scripts test --ci --coverage --watchAll=false",
     "test:watch": "react-scripts test",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

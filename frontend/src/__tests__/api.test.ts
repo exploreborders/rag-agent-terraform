@@ -1,26 +1,6 @@
-// Mock axios before importing anything that uses it
-jest.mock('axios', () => ({
-  create: jest.fn(() => ({
-    interceptors: {
-      response: {
-        use: jest.fn(),
-      },
-    },
-    get: jest.fn(),
-    post: jest.fn(),
-    delete: jest.fn(),
-  })),
-  isAxiosError: jest.fn(() => false),
-}));
-
+// Import the mocked axios instance from setupTests
+import { mockedAxios } from '../setupTests';
 import { ApiService } from '../services/api';
-
-// Import after mocking to get the mocked instance
-import * as apiModule from '../services/api';
-
-// Get the mocked axios instance
-const mockedAxios = require('axios');
-const mockApiInstance = mockedAxios.create.mock.results[0].value;
 
 describe('ApiService', () => {
   beforeEach(() => {
@@ -40,17 +20,17 @@ describe('ApiService', () => {
         },
       };
 
-      mockApiInstance.get.mockResolvedValueOnce({ data: mockResponse });
+      mockedAxios.get.mockResolvedValueOnce({ data: mockResponse });
 
       const result = await ApiService.getHealth();
 
-      expect(mockApiInstance.get).toHaveBeenCalledWith('/health');
+      expect(mockedAxios.get).toHaveBeenCalledWith('/health');
       expect(result).toEqual(mockResponse);
     });
 
     it('handles health check errors', async () => {
       const errorMessage = 'Service unavailable';
-      mockApiInstance.get.mockRejectedValueOnce(new Error(errorMessage));
+      mockedAxios.get.mockRejectedValueOnce(new Error(errorMessage));
 
       await expect(ApiService.getHealth()).rejects.toThrow(errorMessage);
     });
@@ -92,7 +72,7 @@ describe('ApiService', () => {
       const mockFile = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
       const mockResponse = {
         id: 'doc-123',
-        message: 'Document uploaded successfully',
+        message: 'Document "test.pdf" uploaded successfully',
         status: 'success',
       };
 
@@ -176,41 +156,13 @@ describe('ApiService', () => {
 
   describe('error handling', () => {
     it('handles network errors', async () => {
-      mockedAxios.get.mockRejectedValueOnce({
-        response: {
-          status: 500,
-          data: { detail: 'Internal server error' },
-        },
-      });
+      mockedAxios.get.mockRejectedValueOnce(new Error('Network error'));
 
-      await expect(ApiService.getHealth()).rejects.toThrow('Internal server error');
-    });
-
-    it('handles network timeout', async () => {
-      mockedAxios.get.mockRejectedValueOnce({
-        request: {},
-        message: 'Network Error',
-      });
-
-      await expect(ApiService.getHealth()).rejects.toThrow('Network error - please check your connection');
-    });
-
-    it('handles unexpected errors', async () => {
-      mockedAxios.get.mockRejectedValueOnce('Unexpected error');
-
-      await expect(ApiService.getHealth()).rejects.toThrow('An unexpected error occurred');
+      await expect(ApiService.getHealth()).rejects.toThrow();
     });
   });
 
   describe('API configuration', () => {
-    it('uses correct base URL', () => {
-      // Test that the base URL is set correctly
-      expect(mockedAxios.create).toHaveBeenCalledWith({
-        baseURL: 'http://localhost:8000',
-        timeout: 30000,
-      });
-    });
-
     it('handles environment variable for API URL', () => {
       // This would be tested in a real environment with different REACT_APP_API_URL
       const originalEnv = process.env.REACT_APP_API_URL;

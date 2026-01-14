@@ -112,7 +112,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
           },
         }}
       >
-        <input {...getInputProps()} />
+        <input {...getInputProps()} data-testid="file-input" />
         <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
         <Typography variant="h6" gutterBottom>
           {isDragActive ? 'Drop files here' : 'Drag & drop documents here'}
