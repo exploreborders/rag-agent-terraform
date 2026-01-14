@@ -20,9 +20,11 @@ describe('QueryResults', () => {
       answer: 'This is a test answer',
       sources: [
         {
-          id: 'source-1',
-          content: 'Source content',
-          score: 0.95,
+          document_id: 'doc-1',
+          filename: 'test.pdf',
+          content_type: 'application/pdf',
+          chunk_text: 'Source content',
+          similarity_score: 0.95,
           metadata: { filename: 'test.pdf' },
         },
       ],

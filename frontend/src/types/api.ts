@@ -26,13 +26,16 @@ export interface QueryRequest {
 export interface QueryResponse {
   answer: string;
   sources: Array<{
-    id: string;
-    content: string;
-    score: number;
+    document_id: string;
+    filename: string;
+    content_type: string;
+    chunk_text: string;
+    similarity_score: number;
     metadata?: Record<string, any>;
   }>;
   confidence?: number;
   processing_time?: number;
+  total_sources?: number;
 }
 
 export interface HealthStatus {
@@ -62,4 +65,44 @@ export interface StatsResponse {
   total_queries: number;
   average_response_time: number;
   uptime_seconds: number;
+}
+
+// Chat Interface Types
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  sources?: QueryResponse['sources'];
+  processing_time?: number;
+  confidence?: number;
+  error?: string;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  created_at: Date;
+  updated_at: Date;
+  document_ids?: string[];
+}
+
+export interface CreateSessionRequest {
+  title?: string;
+  document_ids?: string[];
+}
+
+export interface SendMessageRequest {
+  message: string;
+  document_ids?: string[];
+}
+
+export interface ChatSessionResponse {
+  session: ChatSession;
+}
+
+export interface MessageResponse {
+  message: ChatMessage;
+  session_id: string;
 }

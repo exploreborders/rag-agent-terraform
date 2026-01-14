@@ -295,7 +295,7 @@ Answer the user's question based on the context above. Be concise but comprehens
                 "options": {
                     "temperature": 0.1,  # Low temperature for consistent answers
                     "top_p": 0.9,
-                    "num_predict": 512,
+                    "num_predict": 1024,  # Increased from 512 to allow longer responses
                 },
             }
 

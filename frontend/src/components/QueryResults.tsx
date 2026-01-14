@@ -111,7 +111,7 @@ export const QueryResults: React.FC<QueryResultsProps> = ({ result, error }) => 
                   Source {index + 1}
                 </Typography>
                 <Chip
-                  label={`Score: ${(source.score * 100).toFixed(1)}%`}
+                  label={`Score: ${typeof source.similarity_score === 'number' && !isNaN(source.similarity_score) ? `${(source.similarity_score * 100).toFixed(1)}%` : 'N/A'}`}
                   size="small"
                   color="primary"
                   variant="outlined"
@@ -136,7 +136,7 @@ export const QueryResults: React.FC<QueryResultsProps> = ({ result, error }) => 
                     fontFamily: 'monospace',
                   }}
                 >
-                  {source.content}
+                  {source.chunk_text}
                 </Typography>
 
                 {source.metadata && Object.keys(source.metadata).length > 0 && (

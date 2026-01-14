@@ -23,12 +23,10 @@ import {
 } from '@mui/icons-material';
 import { DocumentUpload } from './components/DocumentUpload';
 import { DocumentList } from './components/DocumentList';
-import { QueryInterface } from './components/QueryInterface';
-import { QueryResults } from './components/QueryResults';
+import { ChatInterface } from './components/ChatInterface';
 import { ApiService } from './services/api';
 import {
   Document,
-  QueryResponse,
   DocumentUploadResponse,
   HealthStatus,
   StatsResponse,
@@ -57,8 +55,6 @@ const theme = createTheme({
 
 function App() {
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [queryResult, setQueryResult] = useState<QueryResponse | null>(null);
-  const [queryError, setQueryError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
   const [stats, setStats] = useState<StatsResponse | null>(null);
@@ -109,14 +105,8 @@ function App() {
     setUploadError(error);
   };
 
-  const handleQueryResult = (result: QueryResponse) => {
-    setQueryResult(result);
-    setQueryError(null);
-  };
-
-  const handleQueryError = (error: string) => {
-    setQueryError(error);
-    setQueryResult(null);
+  const handleChatError = (error: string) => {
+    setUploadError(error);
   };
 
   const handleDocumentDeleted = () => {
@@ -217,20 +207,13 @@ function App() {
               />
             </Grid>
 
-            <Grid item xs={12} lg={6}>
-              {/* Query Interface */}
-              <QueryInterface
-                documents={documents}
-                onQueryResult={handleQueryResult}
-                onQueryError={handleQueryError}
-              />
-
-              {/* Query Results */}
-              <QueryResults
-                result={queryResult}
-                error={queryError}
-              />
-            </Grid>
+             <Grid item xs={12} lg={6}>
+               {/* Chat Interface */}
+               <ChatInterface
+                 documents={documents}
+                 onError={handleChatError}
+               />
+             </Grid>
           </Grid>
         </Container>
 
