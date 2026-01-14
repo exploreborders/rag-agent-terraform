@@ -19,11 +19,13 @@ interface DocumentUploadProps {
   onUploadSuccess: (document: DocumentUploadResponse) => void;
   // eslint-disable-next-line no-unused-vars
   onUploadError: (error: string) => void;
+  darkMode?: boolean;
 }
 
 export const DocumentUpload: React.FC<DocumentUploadProps> = ({
   onUploadSuccess,
   onUploadError,
+  darkMode = false,
 }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -92,7 +94,12 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
   };
 
   return (
-    <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+    <Paper elevation={2} sx={{
+      p: 3,
+      mb: 3,
+      bgcolor: darkMode ? 'grey.800' : 'inherit',
+      color: darkMode ? 'grey.100' : 'inherit'
+    }}>
       <Typography variant="h6" gutterBottom>
         Upload Documents
       </Typography>
@@ -101,12 +108,13 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
         {...getRootProps()}
         sx={{
           border: '2px dashed',
-          borderColor: isDragActive ? 'primary.main' : 'grey.300',
+          borderColor: isDragActive ? 'primary.main' : (darkMode ? 'grey.600' : 'grey.300'),
           borderRadius: 2,
           p: 4,
           textAlign: 'center',
           cursor: 'pointer',
-          bgcolor: isDragActive ? 'action.hover' : 'background.paper',
+          bgcolor: isDragActive ? 'action.hover' : (darkMode ? 'grey.700' : 'grey.50'),
+          color: darkMode ? 'grey.100' : 'inherit',
           transition: 'all 0.2s ease-in-out',
           '&:hover': {
             borderColor: 'primary.main',
@@ -127,36 +135,43 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
         </Typography>
       </Box>
 
-      {uploadedFiles.length > 0 && (
-        <Box sx={{ mt: 3 }}>
-          <Typography variant="subtitle1" gutterBottom>
-            Selected Files:
-          </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {uploadedFiles.map((file, index) => (
-              <Chip
-                key={index}
-                icon={<InsertDriveFile />}
-                label={`${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`}
-                variant="outlined"
-                size="small"
-              />
-            ))}
-          </Stack>
+       <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+         <Button
+           variant="contained"
+           onClick={handleUpload}
+           disabled={uploading || uploadedFiles.length === 0}
+           startIcon={<CloudUpload />}
+         >
+           {uploading ? 'Uploading...' : 'Upload Files'}
+         </Button>
+         {uploadedFiles.length > 0 && (
+           <Button variant="outlined" onClick={clearFiles} disabled={uploading}>
+             Clear
+           </Button>
+         )}
+       </Box>
 
-          <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-            <Button
-              variant="contained"
-              onClick={handleUpload}
-              disabled={uploading}
-              startIcon={<CloudUpload />}
-            >
-              {uploading ? 'Uploading...' : 'Upload Files'}
-            </Button>
-            <Button variant="outlined" onClick={clearFiles} disabled={uploading}>
-              Clear
-            </Button>
-          </Box>
+       {uploadedFiles.length > 0 && (
+         <Box sx={{ mt: 3 }}>
+           <Typography variant="subtitle1" gutterBottom>
+             Selected Files:
+           </Typography>
+           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {uploadedFiles.map((file, index) => (
+                <Chip
+                  key={index}
+                  icon={<InsertDriveFile />}
+                  label={`${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`}
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    bgcolor: darkMode ? 'grey.700' : 'inherit',
+                    color: darkMode ? 'grey.100' : 'inherit',
+                    borderColor: darkMode ? 'grey.600' : 'inherit'
+                  }}
+                />
+              ))}
+           </Stack>
 
           {uploading && (
             <Box sx={{ mt: 2 }}>

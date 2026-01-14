@@ -37,7 +37,7 @@ describe('DocumentUpload', () => {
     );
 
     expect(screen.getByText(/Supported formats: PDF, TXT, JPG, PNG/)).toBeInTheDocument();
-    expect(screen.getByText(/Maximum size: 50MB/)).toBeInTheDocument();
+    expect(screen.getByText(/max 50MB each/)).toBeInTheDocument();
   });
 
   it('handles file selection correctly', async () => {

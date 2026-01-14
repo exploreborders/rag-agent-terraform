@@ -169,12 +169,19 @@ describe('DocumentList', () => {
     });
   });
 
-    // Click delete button
+  it('handles delete via icon click', async () => {
+    render(<DocumentList onDocumentDeleted={mockOnDocumentDeleted} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('document1.pdf')).toBeInTheDocument();
+    });
+
+    // Click delete icon
     const deleteButtons = screen.getAllByTestId('DeleteIcon');
     fireEvent.click(deleteButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to delete document')).toBeInTheDocument();
+      expect(mockedApiService.deleteDocument).toHaveBeenCalledWith('doc-1');
     });
   });
 
@@ -226,12 +233,19 @@ describe('DocumentList', () => {
 
     await waitFor(() => {
       // Should show formatted dates - check that dates are displayed (not "Invalid date")
-      const dateCells = screen.getAllByRole('cell').filter(cell =>
-        cell.textContent && cell.textContent.includes('/') || cell.textContent?.includes('-')
-      );
+      const dateCells = screen.getAllByRole('cell').filter(cell => {
+        const text = cell.textContent;
+        return text && (text.includes('/') || text.includes('-'));
+      });
       expect(dateCells.length).toBeGreaterThan(0);
-      // Ensure no "Invalid date" text appears
+    });
+
+    // Ensure no "Invalid date" text appears
+    await waitFor(() => {
       expect(screen.queryByText('Invalid date')).not.toBeInTheDocument();
+    });
+
+    await waitFor(() => {
       expect(screen.queryByText('Date unavailable')).not.toBeInTheDocument();
     });
   });

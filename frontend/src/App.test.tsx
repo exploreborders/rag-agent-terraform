@@ -7,7 +7,7 @@ jest.mock('./services/api');
 
 // Mock ChatInterface component
 jest.mock('./components/ChatInterface', () => ({
-  ChatInterface: ({ documents, onError }: any) => (
+  ChatInterface: ({ documents, onError: _onError }: any) => (
     <div data-testid="chat-interface">
       <h6>Chat Interface</h6>
       <p>Documents: {documents.length}</p>

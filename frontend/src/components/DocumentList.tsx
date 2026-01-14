@@ -30,11 +30,13 @@ import { Document } from '../types/api';
 interface DocumentListProps {
   refreshTrigger?: number; // Trigger to refresh the list
   onDocumentDeleted?: () => void;
+  darkMode?: boolean;
 }
 
 export const DocumentList: React.FC<DocumentListProps> = ({
   refreshTrigger,
   onDocumentDeleted,
+  darkMode = false,
 }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,7 +173,12 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
   if (loading) {
     return (
-      <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+      <Paper elevation={2} sx={{
+        p: 3,
+        mb: 3,
+        bgcolor: darkMode ? 'grey.800' : 'inherit',
+        color: darkMode ? 'grey.100' : 'inherit'
+      }}>
         <Box display="flex" justifyContent="center" alignItems="center" p={4}>
           <CircularProgress />
           <Typography sx={{ ml: 2 }}>Loading documents...</Typography>
@@ -181,7 +188,12 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   }
 
   return (
-    <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+    <Paper elevation={2} sx={{
+      p: 3,
+      mb: 3,
+      bgcolor: darkMode ? 'grey.800' : 'inherit',
+      color: darkMode ? 'grey.100' : 'inherit'
+    }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6">
           Documents ({documents.length})
@@ -213,8 +225,18 @@ export const DocumentList: React.FC<DocumentListProps> = ({
           </Typography>
         </Box>
       ) : (
-        <TableContainer>
-          <Table>
+        <TableContainer sx={{
+          bgcolor: darkMode ? 'grey.900' : 'inherit',
+          '& .MuiTableCell-root': {
+            borderBottom: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(224, 224, 224, 1)'}`
+          }
+        }}>
+          <Table sx={{
+            bgcolor: darkMode ? 'grey.900' : 'inherit',
+            '& .MuiTableRow-root:hover': {
+              bgcolor: darkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'
+            }
+          }}>
             <TableHead>
               <TableRow>
                 <TableCell>File</TableCell>
@@ -253,6 +275,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       color={getStatusColor(doc.status)}
                       size="small"
                       variant="outlined"
+                      sx={{
+                        bgcolor: darkMode ? 'grey.700' : 'inherit',
+                        color: darkMode ? 'grey.100' : 'inherit'
+                      }}
                     />
                   </TableCell>
                   <TableCell>

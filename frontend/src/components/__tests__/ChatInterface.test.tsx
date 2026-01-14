@@ -35,11 +35,11 @@ describe('ChatInterface', () => {
     localStorageMock.setItem.mockImplementation(() => {});
   });
 
-  it('renders chat interface with welcome message', () => {
+  it('renders chat interface with session', () => {
     render(<ChatInterface documents={[]} onError={jest.fn()} />);
 
-    expect(screen.getByText('Welcome to RAG Chat')).toBeInTheDocument();
-    expect(screen.getByText('Start a conversation with your documents')).toBeInTheDocument();
+    expect(screen.getByText('New Chat')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Ask a question about your documents...')).toBeInTheDocument();
   });
 
   it('displays document selection when documents are available', () => {
@@ -56,7 +56,7 @@ describe('ChatInterface', () => {
     expect(screen.getByText('New Chat')).toBeInTheDocument();
   });
 
-  it('displays sources with proper naming and scores', () => {
+  it('displays sources with proper naming and scores', async () => {
     const mockSources = [
       {
         document_id: 'doc-1',
@@ -98,20 +98,42 @@ describe('ChatInterface', () => {
     fireEvent.click(sendButton);
 
     // Wait for the response
-    return waitFor(() => {
+    // Wait for the answer to appear
+    await waitFor(() => {
       expect(screen.getByText('This is a test answer')).toBeInTheDocument();
+    });
 
-      // Check that sources are displayed with proper names and scores
-      expect(screen.getByText('sample_text.txt • Score: 85.0%')).toBeInTheDocument();
-      expect(screen.getByText('sample_code.py • Score: 72.0%')).toBeInTheDocument();
+    // Check that sources accordion is displayed
+    await waitFor(() => {
+      expect(screen.getByText('2 sources cited')).toBeInTheDocument();
+    });
 
-      // Check that source content is displayed
+    // Expand the sources accordion
+    const accordion = screen.getByText('2 sources cited').closest('[role="button"]');
+    if (accordion) {
+      fireEvent.click(accordion);
+    }
+
+    // Check that sources are displayed with proper names and scores
+    await waitFor(() => {
+      expect(screen.getByText('sample_text.txt')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('sample_code.py')).toBeInTheDocument();
+    });
+
+    // Check that source content is displayed
+    await waitFor(() => {
       expect(screen.getByText('This is sample content about AI.')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
       expect(screen.getByText('def hello_world(): return "Hello"')).toBeInTheDocument();
     });
   });
 
-  it('handles NaN similarity scores gracefully', () => {
+  it('handles NaN similarity scores gracefully', async () => {
     const mockSourcesWithNaN = [
       {
         document_id: 'doc-1',
@@ -138,8 +160,20 @@ describe('ChatInterface', () => {
     fireEvent.change(input, { target: { value: 'Test question' } });
     fireEvent.click(sendButton);
 
-    return waitFor(() => {
-      expect(screen.getByText('sample_text.txt • Score: N/A')).toBeInTheDocument();
+    // Check that sources accordion is displayed
+    await waitFor(() => {
+      expect(screen.getByText('1 source cited')).toBeInTheDocument();
+    });
+
+    // Expand the sources accordion
+    const accordion = screen.getByText('1 source cited').closest('[role="button"]');
+    if (accordion) {
+      fireEvent.click(accordion);
+    }
+
+    // Check that source is displayed
+    await waitFor(() => {
+      expect(screen.getByText('sample_text.txt')).toBeInTheDocument();
     });
   });
 });

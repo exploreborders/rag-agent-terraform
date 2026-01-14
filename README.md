@@ -8,8 +8,9 @@ This project delivers a complete, self-contained RAG system that processes docum
 
 ### Key Features
 
+- **💬 Chat Interface**: Conversational AI experience with document context and session management
 - **📱 Modern Web Interface**: React-based frontend with Material-UI for document management and querying
-- **📊 Monitoring & Observability**: Prometheus + Grafana stack for metrics collection and visualization
+- **📊 Monitoring & Observability**: Prometheus + Grafana stack with 3 comprehensive dashboards
 - **🧪 Comprehensive Testing**: 200+ test cases covering backend and frontend functionality
 - **📄 Document Processing**: PDF, text, and image processing with automatic chunking
 - **🔍 Vector Search**: PostgreSQL with pgvector for similarity search
