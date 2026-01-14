@@ -3,8 +3,7 @@ global:
   evaluation_interval: 15s
 
 rule_files:
-  # - "first_rules.yml"
-  # - "second_rules.yml"
+  - "alerting.yml"
 
 scrape_configs:
   - job_name: 'prometheus'
@@ -13,16 +12,40 @@ scrape_configs:
 
   - job_name: 'rag-agent'
     static_configs:
-      - targets: ['rag-agent-app-prod:8000']
+      - targets: ['rag-agent-app:8000']
     metrics_path: '/metrics'
     scrape_interval: 5s
 
   - job_name: 'postgres'
     static_configs:
-      - targets: ['rag-agent-postgres-prod:9187']
+      - targets: ['rag-agent-postgres-exporter-dev:9187']
     scrape_interval: 10s
 
   - job_name: 'redis'
     static_configs:
-      - targets: ['rag-agent-redis-prod:9121']
+      - targets: ['rag-agent-redis-exporter-dev:9121']
     scrape_interval: 10s
+
+  - job_name: 'node'
+    static_configs:
+      - targets: ['rag-agent-node-exporter-dev:9100']
+    scrape_interval: 15s
+
+  # Docker service discovery for dynamic environments
+  - job_name: 'docker-services'
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 15s
+    relabel_configs:
+      - source_labels: [__meta_docker_container_name]
+        regex: 'rag-agent-(.+)-dev'
+        target_label: 'service'
+      - source_labels: [__meta_docker_container_name]
+        regex: 'rag-agent-(.+)-dev'
+        target_label: 'container_name'
+        replacement: '${1}'
+    # Only scrape containers that expose metrics
+    metric_relabel_configs:
+      - source_labels: [__address__]
+        regex: '.*:9090$|.*:8000$|.*:9187$|.*:9121$|.*:9100$'
+        action: keep

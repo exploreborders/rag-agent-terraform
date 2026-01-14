@@ -116,6 +116,24 @@ variable "grafana_admin_password" {
   sensitive   = true
 }
 
+variable "postgres_exporter_port" {
+  description = "PostgreSQL exporter port on host"
+  type        = number
+  default     = 9187
+}
+
+variable "redis_exporter_port" {
+  description = "Redis exporter port on host"
+  type        = number
+  default     = 9121
+}
+
+variable "node_exporter_port" {
+  description = "Node exporter port on host"
+  type        = number
+  default     = 9100
+}
+
 # Network Configuration
 variable "network_name" {
   description = "Docker network name"

@@ -2,7 +2,7 @@
 
 import os
 
-from pydantic import ConfigDict
+from pydantic import ConfigDict, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -28,10 +28,31 @@ class Settings(BaseSettings):
     postgres_db: str = "rag_db"
     database_url: str = "postgresql://rag_user:rag_password@localhost:5432/rag_db"
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def assemble_database_url(cls, v, info):
+        """Assemble database URL from components."""
+        if (
+            isinstance(v, str)
+            and v != "postgresql://rag_user:rag_password@localhost:5432/rag_db"
+        ):
+            return v
+        values = info.data
+        return f"postgresql://{values.get('postgres_user', 'rag_user')}:{values.get('postgres_password', 'rag_password')}@{values.get('postgres_host', 'localhost')}:{values.get('postgres_port', 5432)}/{values.get('postgres_db', 'rag_db')}"
+
     # Redis Configuration
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_url: str = "redis://localhost:6379"
+
+    @field_validator("redis_url", mode="before")
+    @classmethod
+    def assemble_redis_url(cls, v, info):
+        """Assemble redis URL from components."""
+        if isinstance(v, str) and v != "redis://localhost:6379":
+            return v
+        values = info.data
+        return f"redis://{values.get('redis_host', 'localhost')}:{values.get('redis_port', 6379)}"
 
     # Ollama Configuration
     ollama_base_url: str = "http://localhost:11434"

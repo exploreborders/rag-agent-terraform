@@ -28,6 +28,15 @@ class DocumentResponse(BaseModel):
     embeddings_count: int = 0
 
 
+class DocumentListResponse(BaseModel):
+    """Response model for listing documents."""
+
+    documents: List[DocumentResponse]
+    total_count: int
+    limit: int
+    offset: int
+
+
 class QueryRequest(BaseModel):
     """Request model for RAG queries."""
 

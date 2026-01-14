@@ -63,7 +63,12 @@ export class ApiService {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    // Transform API response to match frontend expectations
+    return {
+      id: response.data.id,
+      message: `Document "${file.name}" uploaded successfully`,
+      status: response.data.status,
+    };
   }
 
   static async deleteDocument(documentId: string): Promise<void> {

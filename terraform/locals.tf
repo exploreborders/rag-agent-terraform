@@ -7,11 +7,14 @@ locals {
   environment  = var.environment
 
   # Container names with consistent naming
-  postgres_container_name = "${local.project_name}-postgres-${local.environment}"
-  redis_container_name    = "${local.project_name}-redis-${local.environment}"
-  app_container_name      = "${local.project_name}-app-${local.environment}"
-  prometheus_container_name = "${local.project_name}-prometheus-${local.environment}"
-  grafana_container_name   = "${local.project_name}-grafana-${local.environment}"
+  postgres_container_name          = "${local.project_name}-postgres-${local.environment}"
+  redis_container_name             = "${local.project_name}-redis-${local.environment}"
+  app_container_name               = "${local.project_name}-app-${local.environment}"
+  prometheus_container_name        = "${local.project_name}-prometheus-${local.environment}"
+  grafana_container_name           = "${local.project_name}-grafana-${local.environment}"
+  postgres_exporter_container_name = "${local.project_name}-postgres-exporter-${local.environment}"
+  redis_exporter_container_name    = "${local.project_name}-redis-exporter-${local.environment}"
+  node_exporter_container_name     = "${local.project_name}-node-exporter-${local.environment}"
 
   # Network configuration
   network_name = var.network_name != "" ? var.network_name : "${local.project_name}-network"
@@ -21,11 +24,14 @@ locals {
   redis_url    = "redis://${local.redis_container_name}:${var.redis_port}"
 
   # Docker image names
-  postgres_image = "pgvector/pgvector:pg15"
-  redis_image    = "redis:${var.redis_version}"
-  app_image      = "${local.project_name}:${var.app_image_tag}"
-  prometheus_image = "prom/prometheus:latest"
-  grafana_image   = "grafana/grafana:latest"
+  postgres_image          = "pgvector/pgvector:pg15"
+  redis_image             = "redis:${var.redis_version}"
+  app_image               = "${local.project_name}:${var.app_image_tag}"
+  prometheus_image        = "prom/prometheus:latest"
+  grafana_image           = "grafana/grafana:latest"
+  postgres_exporter_image = "prometheuscommunity/postgres-exporter:latest"
+  redis_exporter_image    = "oliver006/redis_exporter:latest"
+  node_exporter_image     = "prom/node-exporter:latest"
 
   # Common labels for all resources
   common_tags = {
@@ -71,6 +77,27 @@ locals {
     retries  = var.healthcheck_retries
   }
 
+  postgres_exporter_healthcheck = {
+    test     = ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9187/metrics"]
+    interval = var.healthcheck_interval
+    timeout  = var.healthcheck_timeout
+    retries  = var.healthcheck_retries
+  }
+
+  redis_exporter_healthcheck = {
+    test     = ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9121/metrics"]
+    interval = var.healthcheck_interval
+    timeout  = var.healthcheck_timeout
+    retries  = var.healthcheck_retries
+  }
+
+  node_exporter_healthcheck = {
+    test     = ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+    interval = var.healthcheck_interval
+    timeout  = var.healthcheck_timeout
+    retries  = var.healthcheck_retries
+  }
+
   # Volume configurations
   postgres_volumes = [
     {
@@ -101,6 +128,10 @@ locals {
     {
       host_path      = abspath("${path.root}/../monitoring/prometheus.yml")
       container_path = "/etc/prometheus/prometheus.yml"
+    },
+    {
+      host_path      = abspath("${path.root}/../monitoring/alerting.yml")
+      container_path = "/etc/prometheus/alerting.yml"
     }
   ]
 
@@ -108,6 +139,18 @@ locals {
     {
       host_path      = abspath("${path.root}/../data/grafana")
       container_path = "/var/lib/grafana"
+    },
+    {
+      host_path      = abspath("${path.root}/../monitoring/grafana/datasources.yml")
+      container_path = "/etc/grafana/provisioning/datasources/datasources.yml"
+    },
+    {
+      host_path      = abspath("${path.root}/../monitoring/grafana/dashboards.yml")
+      container_path = "/etc/grafana/provisioning/dashboards/dashboards.yml"
+    },
+    {
+      host_path      = abspath("${path.root}/../monitoring/grafana/dashboards")
+      container_path = "/var/lib/grafana/dashboards"
     }
   ]
 }

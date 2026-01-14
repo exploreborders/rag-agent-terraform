@@ -22,7 +22,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy requirements and install Python dependencies
 COPY src/requirements.txt .
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+    pip install -r requirements.txt && \
+    pip install prometheus-client==0.19.0 starlette==0.27.0 starlette-exporter==0.15.0
 
 # Production stage
 FROM python:3.11-slim as production

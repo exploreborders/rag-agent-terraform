@@ -334,3 +334,169 @@ resource "docker_container" "grafana" {
   # Wait for network to be ready
   depends_on = [docker_network.rag_network]
 }
+
+# PostgreSQL Exporter
+resource "docker_image" "postgres_exporter" {
+  name = local.postgres_exporter_image
+}
+
+resource "docker_container" "postgres_exporter" {
+  name  = local.postgres_exporter_container_name
+  image = docker_image.postgres_exporter.image_id
+
+  # Environment variables for PostgreSQL connection
+  env = [
+    "DATA_SOURCE_NAME=postgresql://${var.postgres_user}:${var.postgres_password}@${local.postgres_container_name}:${var.postgres_port}/${var.postgres_db}?sslmode=disable"
+  ]
+
+  # Ports
+  ports {
+    internal = 9187
+    external = var.postgres_exporter_port
+  }
+
+  # Health check
+  healthcheck {
+    test         = local.postgres_exporter_healthcheck.test
+    interval     = local.postgres_exporter_healthcheck.interval
+    timeout      = local.postgres_exporter_healthcheck.timeout
+    retries      = local.postgres_exporter_healthcheck.retries
+    start_period = "30s"
+  }
+
+  # Networking
+  networks_advanced {
+    name = docker_network.rag_network.name
+  }
+
+  # Restart policy
+  restart = "unless-stopped"
+
+  # Labels
+  dynamic "labels" {
+    for_each = local.common_tags
+    content {
+      label = lower(replace(labels.key, "_", "-"))
+      value = labels.value
+    }
+  }
+
+  # Dependencies
+  depends_on = [docker_container.postgres]
+}
+
+# Redis Exporter
+resource "docker_image" "redis_exporter" {
+  name = local.redis_exporter_image
+}
+
+resource "docker_container" "redis_exporter" {
+  name  = local.redis_exporter_container_name
+  image = docker_image.redis_exporter.image_id
+
+  # Command for Redis exporter
+  command = [
+    "-redis.addr",
+    "redis://${local.redis_container_name}:${var.redis_port}"
+  ]
+
+  # Ports
+  ports {
+    internal = 9121
+    external = var.redis_exporter_port
+  }
+
+  # Health check
+  healthcheck {
+    test         = local.redis_exporter_healthcheck.test
+    interval     = local.redis_exporter_healthcheck.interval
+    timeout      = local.redis_exporter_healthcheck.timeout
+    retries      = local.redis_exporter_healthcheck.retries
+    start_period = "30s"
+  }
+
+  # Networking
+  networks_advanced {
+    name = docker_network.rag_network.name
+  }
+
+  # Restart policy
+  restart = "unless-stopped"
+
+  # Labels
+  dynamic "labels" {
+    for_each = local.common_tags
+    content {
+      label = lower(replace(labels.key, "_", "-"))
+      value = labels.value
+    }
+  }
+
+  # Dependencies
+  depends_on = [docker_container.redis]
+}
+
+# Node Exporter
+resource "docker_image" "node_exporter" {
+  name = local.node_exporter_image
+}
+
+resource "docker_container" "node_exporter" {
+  name  = local.node_exporter_container_name
+  image = docker_image.node_exporter.image_id
+
+  # Command to run node exporter
+  command = [
+    "--path.rootfs=/host",
+    "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)",
+    "--collector.netclass",
+    "--collector.netdev",
+    "--collector.cpu",
+    "--collector.meminfo",
+    "--collector.loadavg",
+    "--collector.filesystem",
+    "--collector.diskstats"
+  ]
+
+  # Volumes for host access
+  volumes {
+    host_path      = "/"
+    container_path = "/host"
+    read_only      = true
+  }
+
+  # Ports
+  ports {
+    internal = 9100
+    external = var.node_exporter_port
+  }
+
+  # Health check
+  healthcheck {
+    test         = local.node_exporter_healthcheck.test
+    interval     = local.node_exporter_healthcheck.interval
+    timeout      = local.node_exporter_healthcheck.timeout
+    retries      = local.node_exporter_healthcheck.retries
+    start_period = "30s"
+  }
+
+  # Networking
+  networks_advanced {
+    name = docker_network.rag_network.name
+  }
+
+  # Restart policy
+  restart = "unless-stopped"
+
+  # Labels
+  dynamic "labels" {
+    for_each = local.common_tags
+    content {
+      label = lower(replace(labels.key, "_", "-"))
+      value = labels.value
+    }
+  }
+
+  # Dependencies
+  depends_on = [docker_network.rag_network]
+}

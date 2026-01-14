@@ -119,6 +119,26 @@ cd src && python -m pytest tests/ --cov=app --cov-report=term-missing --cov-repo
 cd src && python -m pytest tests/ -n auto
 ```
 
+### Monitoring Commands
+```bash
+# Test monitoring setup
+make monitoring-test
+
+# Check monitoring container status
+make monitoring-status
+
+# View monitoring logs
+make monitoring-logs
+
+# Complete monitoring setup
+make workflow-monitoring
+
+# Access monitoring interfaces
+# Grafana: http://localhost:3000 (admin/admin)
+# Prometheus: http://localhost:9090
+# Application Metrics: http://localhost:8000/metrics
+```
+
 ### Code Quality & Linting
 ```bash
 # Format Python code with black (88 character line length)

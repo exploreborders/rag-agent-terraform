@@ -1,0 +1,10 @@
+# Grafana Provisioning Configuration
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://rag-agent-prometheus-dev:9090
+    isDefault: true
+    editable: true

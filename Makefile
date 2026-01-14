@@ -141,6 +141,23 @@ pre-commit: ## Run pre-commit hooks
 ci: check test ## Run CI checks (lint + test)
 	@echo "CI checks passed!"
 
+# Monitoring
+monitoring-test: ## Test monitoring setup
+	@echo "Testing monitoring setup..."
+	./scripts/test_monitoring.sh
+
+monitoring-logs: ## Show monitoring container logs
+	@echo "Showing monitoring logs..."
+	docker logs rag-agent-prometheus-dev --tail 50
+	docker logs rag-agent-grafana-dev --tail 50
+
+monitoring-status: ## Check monitoring container status
+	@echo "Checking monitoring status..."
+	docker ps | grep rag-agent | grep -E "(prometheus|grafana|exporter)"
+
 # Development workflow
 workflow-dev: setup install infra-init deploy dev ## Complete development setup
 	@echo "Development environment ready!"
+
+workflow-monitoring: infra-apply monitoring-test ## Complete monitoring setup
+	@echo "Monitoring environment ready!"
