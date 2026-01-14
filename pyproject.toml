@@ -130,7 +130,9 @@ python_functions = ["test_*"]
 asyncio_mode = "auto"
 markers = [
     "unit: marks tests as unit tests",
-    "integration: marks tests as integration tests",
+    "integration: marks tests that require real external services",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "database: marks tests that require database connectivity",
+    "redis: marks tests that require Redis connectivity",
     "asyncio: marks tests as async",
 ]

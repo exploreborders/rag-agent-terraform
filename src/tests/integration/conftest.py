@@ -30,7 +30,20 @@ def event_loop():
 
 @pytest.fixture(scope="session")
 def postgres_container() -> Dict[str, Any]:
-    """Use existing PostgreSQL container."""
+    """Use existing PostgreSQL container or skip if not available."""
+    import socket
+
+    # Check if PostgreSQL is accessible
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        result = sock.connect_ex(("localhost", 5432))
+        sock.close()
+        if result != 0:
+            pytest.skip("PostgreSQL not available on localhost:5432")
+    except:
+        pytest.skip("PostgreSQL not available on localhost:5432")
+
     # Use the existing container that's already running
     connection_info = {
         "host": "localhost",
@@ -46,7 +59,20 @@ def postgres_container() -> Dict[str, Any]:
 
 @pytest.fixture(scope="session")
 def redis_container() -> Dict[str, Any]:
-    """Use existing Redis container."""
+    """Use existing Redis container or skip if not available."""
+    import socket
+
+    # Check if Redis is accessible
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        result = sock.connect_ex(("localhost", 6379))
+        sock.close()
+        if result != 0:
+            pytest.skip("Redis not available on localhost:6379")
+    except:
+        pytest.skip("Redis not available on localhost:6379")
+
     # Use the existing container that's already running
     connection_info = {
         "host": "localhost",
@@ -69,9 +95,13 @@ async def real_vector_store(postgres_container) -> AsyncGenerator[VectorStore, N
         await store.connect()
         await store.initialize_schema()
 
+        # Clear any existing test data before starting
+        await store._clear_all_test_data()
+
         yield store
 
-        # Cleanup
+        # Cleanup: clear all test data after test
+        await store._clear_all_test_data()
         await store.disconnect()
 
     finally:
@@ -90,11 +120,13 @@ async def real_redis_memory(redis_container) -> AsyncGenerator[AgentMemory, None
 
     try:
         memory = AgentMemory()
+        await memory.connect()  # Connect explicitly
         yield memory
 
     finally:
         # Clean up Redis data
         await memory.clear_all_cache()
+        await memory.disconnect()  # Disconnect explicitly
 
         if original_redis_url:
             os.environ["REDIS_URL"] = original_redis_url
@@ -116,13 +148,16 @@ async def real_ollama_client() -> AsyncGenerator[OllamaClient, None]:
         return_value=[[0.1, 0.2, 0.3] * 256]  # 768 dimensions - return list directly
     )
 
-    # Mock the generate method
+    # Mock the generate method with more realistic responses
     original_generate = client.generate
     client.generate = AsyncMock(
         return_value=type(
             "GenerateResponse",
             (),
-            {"response": "This is a test response from the AI model.", "done": True},
+            {
+                "response": "Machine learning is a subset of artificial intelligence that enables computers to learn from data without being explicitly programmed. AI encompasses a broader range of technologies including machine learning, deep learning, and neural networks.",
+                "done": True,
+            },
         )()
     )
 

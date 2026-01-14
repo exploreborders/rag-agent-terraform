@@ -256,24 +256,27 @@ class VectorStore:
 
             # Bulk insert chunks
             logger.info(f"Bulk inserting {len(chunk_data)} chunks")
-            logger.info(
-                f"First chunk data: {chunk_data[0] if chunk_data else 'No chunks'}"
-            )
-            await conn.executemany(
-                """
-                INSERT INTO document_chunks (id, document_id, content, chunk_index,
-                                          total_chunks, embedding, metadata)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-                ON CONFLICT (id) DO UPDATE SET
-                    content = EXCLUDED.content,
-                    embedding = EXCLUDED.embedding,
-                    metadata = EXCLUDED.metadata
-            """,
-                chunk_data,
-            )
+            try:
+                result = await conn.executemany(
+                    """
+                    INSERT INTO document_chunks (id, document_id, content, chunk_index,
+                                              total_chunks, embedding, metadata)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    ON CONFLICT (id) DO UPDATE SET
+                        content = EXCLUDED.content,
+                        embedding = EXCLUDED.embedding,
+                        metadata = EXCLUDED.metadata
+                """,
+                    chunk_data,
+                )
+                logger.info(f"executemany result: {result}")
+            except Exception as e:
+                logger.error(f"Error in executemany: {e}")
+                raise
 
-        logger.info(f"Stored {len(chunks)} document chunks")
-        return len(chunks)
+        result = len(chunks)
+        logger.info(f"Stored {result} document chunks, returning {result}")
+        return result
 
     async def similarity_search(
         self,
@@ -505,12 +508,25 @@ class VectorStore:
         return result or 0
 
     async def health_check(self) -> bool:
-        """Check database health."""
+        """Check if the vector store is healthy."""
         try:
             await self._ensure_connection()
             async with self._pool.acquire() as conn:
-                await conn.fetchval("SELECT 1")
-            return True
+                result = await conn.fetchval("SELECT 1")
+                return result == 1
         except Exception as e:
-            logger.error(f"Database health check failed: {e}")
+            logger.error(f"Vector store health check failed: {e}")
             return False
+
+    async def _clear_all_test_data(self):
+        """Clear all data for testing purposes. USE WITH CAUTION."""
+        await self._ensure_connection()
+        async with self._pool.acquire() as conn:
+            # Clear all test data - be very careful with this in production!
+            chunks_deleted = await conn.fetchval("SELECT COUNT(*) FROM document_chunks")
+            docs_deleted = await conn.fetchval("SELECT COUNT(*) FROM documents")
+            await conn.execute("DELETE FROM document_chunks")
+            await conn.execute("DELETE FROM documents")
+            logger.info(
+                f"Cleared test data: {docs_deleted} documents, {chunks_deleted} chunks"
+            )

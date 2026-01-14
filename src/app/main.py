@@ -25,27 +25,13 @@ logger = logging.getLogger(__name__)
 # Custom registry for RAG metrics to avoid conflicts with starlette-exporter
 rag_registry = CollectorRegistry()
 
-# Custom metrics will be initialized in lifespan to avoid conflicts
+# Custom registry to avoid conflicts with default registry during tests
+custom_registry = CollectorRegistry()
+
+# Metrics - will be initialized only when app starts
 RAG_DOCUMENTS_PROCESSED = None
 RAG_QUERIES_PROCESSED = None
-
-# Custom metrics for RAG operations
-RAG_DOCUMENTS_PROCESSED = Counter(
-    "rag_agent_documents_processed_total",
-    "Total number of documents processed by RAG agent",
-)
-
-RAG_QUERIES_PROCESSED = Counter(
-    "rag_agent_queries_processed_total",
-    "Total number of queries processed by RAG agent",
-)
-
-# Basic HTTP request metrics
-HTTP_REQUESTS_TOTAL = Counter(
-    "rag_http_requests_total",
-    "Total number of HTTP requests",
-    ["method", "endpoint", "status"],
-)
+HTTP_REQUESTS_TOTAL = None
 
 RAG_QUERIES_PROCESSED = Counter(
     "rag_agent_queries_processed_total",
@@ -75,24 +61,24 @@ async def lifespan(app: FastAPI):
     logger.info("Starting RAG Agent application...")
     try:
         # Initialize custom metrics after starlette-exporter
+        global RAG_DOCUMENTS_PROCESSED, RAG_QUERIES_PROCESSED, HTTP_REQUESTS_TOTAL
         RAG_DOCUMENTS_PROCESSED = Counter(
             "rag_agent_documents_processed_total",
             "Total number of documents processed by RAG agent",
-            registry=rag_registry,
+            registry=custom_registry,
         )
         RAG_QUERIES_PROCESSED = Counter(
             "rag_agent_queries_processed_total",
             "Total number of queries processed by RAG agent",
-            registry=rag_registry,
+            registry=custom_registry,
         )
 
         # Initialize HTTP metrics
-        global HTTP_REQUESTS_TOTAL
         HTTP_REQUESTS_TOTAL = Counter(
             "rag_http_requests_total",
             "Total number of HTTP requests",
             ["method", "endpoint", "status"],
-            registry=rag_registry,
+            registry=custom_registry,
         )
 
         rag_agent = RAGAgent()

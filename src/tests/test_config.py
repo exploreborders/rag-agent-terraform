@@ -18,23 +18,15 @@ class TestSettings:
         assert settings.api_port == 8000
         assert settings.vector_dimension == 768
 
-    def test_database_url_construction(self):
-        """Test database URL construction from components."""
-        settings = Settings(
-            postgres_user="testuser",
-            postgres_password="testpass",
-            postgres_host="testhost",
-            postgres_port=5432,
-            postgres_db="testdb",
-        )
-        # Now uses default URL since dynamic assembly was removed
+    def test_database_url_default(self):
+        """Test default database URL."""
+        settings = Settings()
         expected_url = "postgresql://rag_user:rag_password@localhost:5432/rag_db"
         assert settings.database_url == expected_url
 
-    def test_redis_url_construction(self):
-        """Test Redis URL construction from components."""
-        settings = Settings(redis_host="redishost", redis_port=6379)
-        # Now uses default URL since dynamic assembly was removed
+    def test_redis_url_default(self):
+        """Test default Redis URL."""
+        settings = Settings()
         expected_url = "redis://localhost:6379"
         assert settings.redis_url == expected_url
 

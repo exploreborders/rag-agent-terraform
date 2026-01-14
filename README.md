@@ -319,12 +319,16 @@ ollama list
 ## 🧪 Testing & Evaluation
 
 **Comprehensive Test Coverage**:
-- **Backend Tests** (58 tests, 100% pass rate):
-  - Unit Tests: Core functionality validation
-  - Integration Tests: API endpoint testing
-  - Document Processing: Multi-format handling
-  - Vector Operations: pgvector similarity search
-  - RAG Pipeline: End-to-end query processing
+- **Unit Tests** (74 tests, 100% pass rate):
+  - Core functionality validation
+  - API endpoint testing
+  - Document processing logic
+  - Vector operations and similarity search
+  - RAG pipeline components
+- **Integration Tests** (11 tests, infrastructure-dependent):
+  - End-to-end document processing workflow
+  - Database and Redis connectivity
+  - Full RAG query pipeline
 
 - **Frontend Tests** (200+ test cases):
   - Component Tests: UI component functionality
@@ -336,19 +340,19 @@ ollama list
 ### Running Tests
 
 ```bash
-# Backend tests (58 tests, 100% pass rate)
-make test               # All backend tests
-make test-unit          # Unit tests only
-make test-integration   # Integration tests only
-make test-cov           # Tests with coverage report
+# Unit tests (fast, no infrastructure required)
+make test               # Unit tests only (74 tests, excludes integration)
+make test-unit          # Same as 'make test'
+make test-cov           # Unit tests with coverage report
 
-# Frontend tests (200+ test cases)
-cd frontend && npm run test:ci    # All frontend tests with coverage
-cd frontend && npm run test:watch # Development test mode
-cd frontend && npm run test       # Interactive test mode
+# Integration tests (requires full infrastructure)
+make deploy            # Start database/Redis infrastructure first
+make test-integration  # Full integration test suite
+make test-integration-quick  # Quick infrastructure validation
 
-# Full test suite (backend + frontend)
-make test && cd frontend && npm run test:ci
+# All tests (requires infrastructure)
+make test-all          # Run both unit and integration tests
+make test-cov-all      # All tests with coverage report
 ```
 
 ### 🎯 **RAG Performance Evaluation**

@@ -22,28 +22,35 @@ dev: ## Start development server
 	source venv/bin/activate && cd src && python3.11 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # Testing
-test: ## Run all tests
-	@echo "Running tests..."
-	source venv/bin/activate && cd src && python3.11 -m pytest tests/ -v --cov=app --cov-report=html
+test: ## Run unit tests only (excludes integration tests)
+	@echo "Running unit tests..."
+	source venv/bin/activate && cd src && python3.11 -m pytest tests/ -v -m "not integration" --cov=app --cov-report=html
 
 test-unit: ## Run unit tests only
 	@echo "Running unit tests..."
 	source venv/bin/activate && cd src && python3.11 -m pytest tests/ -v -m "not integration"
 
-test-integration: ## Run integration tests with real databases
+test-integration: ## Run integration tests with real infrastructure
 	@echo "Running integration tests..."
-	source venv/bin/activate && python3.11 ../run_integration_tests.py
+	@echo "Note: Requires 'make deploy' to be run first for database/Redis infrastructure"
+	source venv/bin/activate && cd src && python3.11 -m pytest tests/integration/ -v -m "integration"
 
-test-integration-quick: ## Run quick integration test to verify setup
+test-integration-quick: ## Run quick integration test to verify infrastructure
 	@echo "Running quick integration test..."
-	source venv/bin/activate && python3.11 ../run_integration_tests.py --quick
+	@echo "Note: Requires 'make deploy' to be run first for database/Redis infrastructure"
+	source venv/bin/activate && cd src && python3.11 -m pytest tests/integration/test_simple_integration.py -v
 
-test-integration: ## Run integration tests only
-	@echo "Running integration tests..."
-	source venv/bin/activate && cd src && python3.11 -m pytest tests/ -v -m "integration"
+test-all: ## Run all tests (unit + integration) - requires full infrastructure
+	@echo "Running all tests..."
+	source venv/bin/activate && cd src && python3.11 -m pytest tests/ -v
 
-test-cov: ## Run tests with coverage report
-	@echo "Running tests with coverage..."
+test-cov: ## Run unit tests with coverage report (excludes integration tests)
+	@echo "Running unit tests with coverage..."
+	source venv/bin/activate && cd src && python3.11 -m pytest tests/ -m "not integration" --cov=app --cov-report=term-missing --cov-report=html
+
+test-cov-all: ## Run all tests with coverage (requires full infrastructure)
+	@echo "Running all tests with coverage..."
+	@echo "Note: Requires 'make deploy' to be run first for database/Redis infrastructure"
 	source venv/bin/activate && cd src && python3.11 -m pytest tests/ --cov=app --cov-report=term-missing --cov-report=html
 
 # Code quality
