@@ -115,9 +115,12 @@ class TestAPIIntegration:
 
             assert response.status_code == 200
             data = response.json()
-            assert len(data) == 2
-            assert data[0]["filename"] == "test.pdf"
-            assert data[1]["filename"] == "guide.txt"
+            assert data["total_count"] == 2
+            assert len(data["documents"]) == 2
+            assert data["documents"][0]["filename"] == "test.pdf"
+            assert data["documents"][1]["filename"] == "guide.txt"
+            assert data["limit"] == 100
+            assert data["offset"] == 0
 
     async def test_list_documents_with_pagination(self, client):
         """Test document listing with pagination."""

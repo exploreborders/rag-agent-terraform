@@ -27,7 +27,7 @@ locals {
   # Docker image names
   postgres_image          = "pgvector/pgvector:pg15"
   redis_image             = "redis:${var.redis_version}"
-  app_image               = "${local.project_name}:${var.app_image_tag}"
+  app_image               = "${local.project_name}-app:${var.app_image_tag}"
   prometheus_image        = "prom/prometheus:latest"
   grafana_image           = "grafana/grafana:latest"
   postgres_exporter_image = "prometheuscommunity/postgres-exporter:latest"
@@ -179,7 +179,7 @@ locals {
   agent_message_channels = {
     query_processor = "rag:agents:query_processor"
     retrieval_agent = "rag:agents:retrieval"
-    mcp_agent       = "rag:agents:mcp"
+    mcp_research    = "rag:agents:mcp_research"
     aggregator      = "rag:agents:aggregator"
     validator       = "rag:agents:validator"
     coordinator     = "rag:coordinator"

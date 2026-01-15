@@ -42,7 +42,7 @@ Dieses Dokument enthält den detaillierten Plan für die Integration eines Multi
 
 ## System-Architektur
 
-### Container-Setup (docker-compose.yml)
+### Container-Setup
 
 ```yaml
 services:
@@ -184,11 +184,10 @@ POST /agents/configure        # Agenten-Konfiguration
 ### Phase 2: Agenten-Entwicklung (2 Wochen)
 1. Query Processor Agent (Intent-Klassifikation)
 2. Retrieval Agent (bestehendes RAG integrieren)
-3. MCP Research Agent (Brave, ArXiv, Perplexity)
-4. MCP Code Agent (GitHub, Context7)
-5. Results Aggregator Agent
-6. Response Generator Agent
-7. Validation Agent
+3. MCP Research Agent
+4. Results Aggregator Agent
+5. Response Generator Agent
+6. Validation Agent
 
 ### Phase 3: Sicherheit & Kommunikation (1 Woche)
 1. DataSanitizer implementieren (ohne User-Management)

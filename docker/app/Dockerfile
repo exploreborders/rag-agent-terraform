@@ -19,9 +19,10 @@ RUN apt-get update && apt-get install -y \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy requirements and install Python dependencies
+# Copy requirements and install Python dependencies with caching
 COPY ../src/requirements.txt .
-RUN pip install --upgrade pip && \
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip && \
     pip install -r requirements.txt && \
     pip install prometheus-client==0.19.0 starlette==0.27.0 starlette-exporter==0.15.0
 

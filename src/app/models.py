@@ -31,7 +31,7 @@ class DocumentResponse(BaseModel):
 class DocumentListResponse(BaseModel):
     """Response model for listing documents."""
 
-    documents: List[DocumentResponse]
+    documents: List[Dict[str, Any]]
     total_count: int
     limit: int
     offset: int
@@ -105,6 +105,54 @@ class ErrorResponse(BaseModel):
     message: str
     details: Optional[Dict[str, Any]] = None
     timestamp: str
+
+
+class RootResponse(BaseModel):
+    """Root endpoint response model."""
+
+    message: str
+    version: str
+    status: str
+    docs: str
+    metrics: str
+
+
+class DeleteResponse(BaseModel):
+    """Response model for delete operations."""
+
+    message: str
+    success: bool
+
+
+class AgentQueryResponse(BaseModel):
+    """Response model for multi-agent queries."""
+
+    query: str
+    answer: str
+    sources: List[QuerySource] = Field(default_factory=list)
+    confidence_score: Optional[float] = None
+    processing_time: Optional[float] = None
+    total_sources: int = 0
+    agent_metrics: Optional[Dict[str, Any]] = None
+    mcp_results: Optional[Dict[str, Any]] = None
+    phase: str = "multi_agent_v1"
+
+
+class AgentStatusResponse(BaseModel):
+    """Response model for agent system status."""
+
+    multi_agent_enabled: bool
+    legacy_rag_available: bool
+    mcp_coordinator_connected: bool
+    agents: Dict[str, str]
+
+
+class MCPToolsTestResponse(BaseModel):
+    """Response model for MCP tools testing."""
+
+    query: str
+    tools_tested: List[str]
+    results: Dict[str, Any]
 
 
 class AgentMemory(BaseModel):

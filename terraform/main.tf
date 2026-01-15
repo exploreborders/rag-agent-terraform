@@ -154,16 +154,9 @@ resource "docker_container" "redis" {
   depends_on = [docker_network.rag_network]
 }
 
-# Application Container
+# Application Container - expects image to be built separately (fast!)
 resource "docker_image" "app" {
   name = local.app_image
-
-  # Build context from parent directory
-  build {
-    context    = "${path.root}/.."
-    dockerfile = "docker/app/Dockerfile"
-    tag        = [local.app_image]
-  }
 }
 
 resource "docker_container" "app" {
@@ -238,15 +231,9 @@ resource "docker_container" "app" {
   ]
 }
 
-# MCP Coordinator Image
+# MCP Coordinator Container - uses local image (build separately)
 resource "docker_image" "mcp_coordinator" {
   name = local.mcp_coordinator_image
-
-  build {
-    context    = "${path.root}/../mcp-coordinator"
-    dockerfile = "Dockerfile"
-    tag        = [local.mcp_coordinator_image]
-  }
 }
 
 # MCP Coordinator Container

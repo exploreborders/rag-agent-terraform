@@ -1,10 +1,10 @@
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-langchain>=0.1.0
-langchain-core>=0.2.0
-langchain-community>=0.0.20
-langchain-mcp-adapters>=0.1.0
-langgraph>=0.1.0
+langchain==0.2.17
+langchain-core==0.2.43
+langchain-community==0.2.19
+# langchain-mcp-adapters==0.2.1  # Removed due to dependency conflicts
+langgraph==0.1.17
 # llama-index==0.10.0  # Temporarily disabled due to dependency conflicts
 pgvector==0.2.4
 psycopg2-binary==2.9.9
@@ -18,14 +18,14 @@ pytest==7.4.3
 pytest-asyncio==0.21.1
 httpx==0.25.2
 python-dotenv==1.0.0
-pydantic==2.5.0
-pydantic-settings==2.1.0
+pydantic>=2.7.4,<3.0.0
+pydantic-settings>=2.3.0
 numpy==1.24.3
 pandas==2.1.4
 requests==2.31.0
 aiofiles==23.2.1
 structlog==23.2.0
 prometheus-client==0.19.0
-starlette==0.27.0
+starlette>=0.27.0
 starlette-exporter==0.15.0
 docker>=7.0.0

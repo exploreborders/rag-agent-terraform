@@ -19,14 +19,15 @@ class DockerMultiAgentRAGState(TypedDict):
     # Agenten-Koordination
     agent_tasks: Dict[str, Any]  # Tasks assigned to agents
     agent_results: Dict[str, Any]  # Results from agent execution
+    intent_classification: Optional[Dict[str, Any]]  # Query intent analysis results
 
     # Sichere Daten (nur Metadaten, keine Volltexte)
     retrieved_metadata: List[Dict[str, Any]]  # Safe document metadata only
     allowed_doc_ids: List[str]  # Authorized document IDs
+    retrieval_confidence: Optional[float]  # Confidence in retrieval results
 
     # MCP Tool Results
     mcp_search_results: Optional[Dict[str, Any]]  # Search tool results
-    mcp_code_results: Optional[Dict[str, Any]]  # Code analysis results
 
     # Finale Antwort
     final_response: Optional[str]  # Generated response
@@ -77,10 +78,11 @@ def create_initial_state(
         "sanitized_query": query,  # Will be sanitized by first agent
         "agent_tasks": {},
         "agent_results": {},
+        "intent_classification": {},
         "retrieved_metadata": [],
+        "retrieval_confidence": 0.0,
         "allowed_doc_ids": [],
         "mcp_search_results": None,
-        "mcp_code_results": None,
         "final_response": None,
         "confidence_score": 0.0,
         "sources": [],
@@ -105,7 +107,6 @@ def sanitize_state_for_llm(state: DockerMultiAgentRAGState) -> Dict[str, Any]:
         "sanitized_query",
         "retrieved_metadata",
         "mcp_search_results",
-        "mcp_code_results",
         "confidence_score",
         "sources",
     }
