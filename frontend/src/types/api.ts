@@ -24,6 +24,7 @@ export interface QueryRequest {
 }
 
 export interface QueryResponse {
+  query: string; // Added for multi-agent response
   answer: string;
   sources: Array<{
     document_id: string;
@@ -33,9 +34,13 @@ export interface QueryResponse {
     similarity_score: number;
     metadata?: Record<string, any>;
   }>;
-  confidence?: number;
+  confidence_score?: number; // Renamed from confidence for consistency
   processing_time?: number;
   total_sources?: number;
+  // Multi-agent specific fields
+  agent_metrics?: Record<string, any>;
+  mcp_results?: Record<string, any>;
+  phase?: string;
 }
 
 export interface HealthStatus {
@@ -43,9 +48,11 @@ export interface HealthStatus {
   timestamp: string;
   version: string;
   services: {
-    ollama: 'healthy' | 'unhealthy';
     vector_store: 'healthy' | 'unhealthy';
-    redis: 'healthy' | 'unhealthy';
+    ollama_client: 'healthy' | 'unhealthy';
+    rag_agent: 'healthy' | 'unhealthy';
+    multi_agent_system: 'healthy' | 'unhealthy';
+    mcp_coordinator: 'healthy' | 'unhealthy';
   };
 }
 

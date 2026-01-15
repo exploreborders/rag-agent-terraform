@@ -160,8 +160,8 @@ function App() {
                 <Stack direction="row" spacing={1}>
                   <Chip
                     icon={<SmartToy />}
-                    label={`Ollama: ${healthStatus.services.ollama}`}
-                    color={getServiceStatusColor(healthStatus.services.ollama)}
+                    label={`Ollama: ${healthStatus.services.ollama_client}`}
+                    color={getServiceStatusColor(healthStatus.services.ollama_client)}
                     size="small"
                     variant="outlined"
                   />
@@ -174,8 +174,15 @@ function App() {
                   />
                   <Chip
                     icon={<Memory />}
-                    label={`Redis: ${healthStatus.services.redis}`}
-                    color={getServiceStatusColor(healthStatus.services.redis)}
+                    label={`Multi-Agent: ${healthStatus.services.multi_agent_system}`}
+                    color={getServiceStatusColor(healthStatus.services.multi_agent_system)}
+                    size="small"
+                    variant="outlined"
+                  />
+                  <Chip
+                    icon={<SmartToy />}
+                    label={`MCP: ${healthStatus.services.mcp_coordinator}`}
+                    color={getServiceStatusColor(healthStatus.services.mcp_coordinator)}
                     size="small"
                     variant="outlined"
                   />

@@ -51,7 +51,7 @@ export class ApiService {
   // Documents
   static async getDocuments(): Promise<Document[]> {
     const response = await api.get('/documents');
-    return response.data;
+    return response.data.documents; // Extract the documents array from the response
   }
 
   static async uploadDocument(file: File): Promise<DocumentUploadResponse> {
@@ -75,9 +75,9 @@ export class ApiService {
     await api.delete(`/documents/${documentId}`);
   }
 
-  // Query
+  // Query - Updated to use multi-agent endpoint
   static async queryDocuments(queryData: QueryRequest): Promise<QueryResponse> {
-    const response = await api.post('/query', queryData);
+    const response = await api.post('/agents/query', queryData);
     return response.data;
   }
 

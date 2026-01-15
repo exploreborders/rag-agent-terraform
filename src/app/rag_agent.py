@@ -81,7 +81,15 @@ class RAGAgent:
 
     async def initialize(self):
         """Initialize all components."""
-        await self._ensure_initialized()
+        if self._initialized:
+            return
+
+        # Initialize components
+        await self.vector_store.initialize_schema()
+        await self.memory.initialize()
+
+        self._initialized = True
+        logger.info("RAG Agent initialized successfully")
 
     async def cleanup(self):
         """Clean up resources."""

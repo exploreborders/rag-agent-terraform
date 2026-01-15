@@ -36,8 +36,7 @@ Dieses Dokument enthält den detaillierten Plan für die Integration eines Multi
 3. **Container-Isolation** - MCP Tools laufen in separaten Docker-Containern
 
 ### Tool-Auswahl
-1. **MCP Search Tools**: Brave Search, ArXiv, Perplexity
-2. **MCP Code Tools**: GitHub Official, Context7
+1. **MCP Search Tools**: search, search_semantic, search_arxiv, search_biorxiv, get_current_time
 3. **Priorität**: Search und Code Tools für RAG-Erweiterung
 
 ## System-Architektur
@@ -70,22 +69,17 @@ services:
 - **Input**: Sanitized Query
 - **Output**: Web Search Results, Academic Papers
 
-#### 4. MCP Code Agent
-- **Aufgabe**: Code-bezogene Suche über MCP Tools
-- **Input**: Sanitized Query
-- **Output**: GitHub Code, Documentation Results
-
-#### 5. Results Aggregator Agent
+#### 4. Results Aggregator Agent
 - **Aufgabe**: Kombination aller Agenten-Ergebnisse
 - **Input**: Alle Agenten-Results
 - **Output**: Ranked, Deduplicated Results
 
-#### 6. Response Generator Agent
+#### 5. Response Generator Agent
 - **Aufgabe**: Finale Antwort-Generierung mit Context
 - **Input**: Aggregated Results
 - **Output**: AI-Generated Response
 
-#### 7. Validation Agent
+#### 6. Validation Agent
 - **Aufgabe**: Qualitäts- und Sicherheitsprüfung
 - **Input**: Generated Response
 - **Output**: Validated Final Response
@@ -102,7 +96,6 @@ class DockerMultiAgentRAGState(TypedDict):
     agent_results: Dict[str, Any]       # Agenten-Ergebnisse
     retrieved_metadata: List[Dict]      # Sichere Suchergebnisse
     mcp_search_results: Optional[Dict]  # MCP Recherche
-    mcp_code_results: Optional[Dict]    # MCP Code-Ergebnisse
     final_response: Optional[str]       # Finale Antwort
     confidence_score: float             # Vertrauens-Score
     sources: List[Dict]                 # Zitierte Quellen
@@ -128,15 +121,13 @@ SENSITIVE_PATTERNS = {
 ### MCP Tool Integration
 
 #### Aktivierte Tools
-- **Search**: brave-search, arxiv, perplexity
-- **Code**: github-official, context7
-- **Zukünftig**: mongodb, elasticsearch, notion
+- **Search**: search, search_semantic, search_arxiv, search_biorxiv
+- **Utility**: get_current_time
 
 #### Tool-Ausführung
 - **Container-basiert**: Jeder Tool läuft in isoliertem Docker-Container
 - **Timeout**: 30 Sekunden pro Tool-Ausführung
 - **Cleanup**: Automatische Container-Bereinigung
-- **OAuth**: Sichere Authentifizierung für externe Services
 
 ## API-Spezifikation
 
@@ -192,8 +183,7 @@ POST /agents/configure        # Agenten-Konfiguration
 ### Phase 3: Sicherheit & Kommunikation (1 Woche)
 1. DataSanitizer implementieren (ohne User-Management)
 2. Sicherheits-Gates für kritische Daten
-3. OAuth für MCP Tools konfigurieren
-4. Audit-Logging für Agenten-Aktivitäten
+3. Audit-Logging für Agenten-Aktivitäten
 
 ### Phase 4: API & Monitoring (1 Woche)
 1. Legacy-API-Kompatibilität sicherstellen
@@ -270,12 +260,6 @@ docker exec rag-api python -c "from app.multi_agent_graph import create_and_comp
 - Redis 7+
 - Python 3.11+
 - Ollama für AI-Modelle
-
-### MCP Tool Prerequisites
-- Brave Search API Key (falls OAuth erforderlich)
-- GitHub OAuth Token
-- ArXiv API Access
-- Context7 API Access
 
 ## Kommunikationsplan
 

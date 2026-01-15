@@ -70,9 +70,9 @@ export const QueryResults: React.FC<QueryResultsProps> = ({ result, error }) => 
             color="primary"
           />
         )}
-        {result.confidence && (
+        {result.confidence_score && (
           <Chip
-            label={`Confidence: ${(result.confidence * 100).toFixed(1)}%`}
+            label={`Confidence: ${(result.confidence_score * 100).toFixed(1)}%`}
             size="small"
             variant="outlined"
             color="secondary"

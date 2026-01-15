@@ -201,7 +201,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         timestamp: new Date(),
         sources: response.sources,
         processing_time: response.processing_time,
-        confidence: response.confidence,
+        confidence: response.confidence_score,
       };
 
       // Add assistant message

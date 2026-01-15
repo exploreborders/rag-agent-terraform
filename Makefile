@@ -64,7 +64,7 @@ dev: ## Start development server
 	./venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 test: ## Run tests
-	./venv/bin/pytest tests/ -v --cov=app --cov-report=term-missing
+	./venv/bin/pytest src/tests/ -v --cov=app --cov-report=term-missing
 
 lint: ## Check and fix code quality
 	./venv/bin/black .

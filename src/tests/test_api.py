@@ -38,48 +38,47 @@ class TestAPIIntegration:
         """Test successful query processing."""
         query_data = {"query": "What is machine learning?", "top_k": 3}
 
-        from app.models import QueryResponse, QuerySource
-
-        mock_response = QueryResponse(
-            query="What is machine learning?",
-            answer="Machine learning is a subset of AI...",
-            sources=[
-                QuerySource(
-                    document_id="doc1",
-                    filename="ml_guide.pdf",
-                    content_type="application/pdf",
-                    chunk_text="Machine learning content...",
-                    similarity_score=0.85,
-                )
+        # Mock response as dictionary (what the endpoint expects from ainvoke)
+        mock_response = {
+            "final_response": "Machine learning is a subset of AI...",
+            "sources": [
+                {
+                    "document_id": "doc1",
+                    "filename": "ml_guide.pdf",
+                    "content_type": "application/pdf",
+                    "chunk_text": "Machine learning content...",
+                    "similarity_score": 0.85,
+                    "metadata": {},
+                }
             ],
-            confidence_score=0.85,
-            processing_time=1.2,
-            total_sources=1,
-        )
+            "confidence_score": 0.85,
+            "processing_time": 1.2,
+            "agent_metrics": {},
+            "mcp_search_results": None,
+        }
 
-        with patch("app.main.rag_agent") as mock_agent:
+        # Mock the multi_agent_graph variable directly
+        with patch("app.main.multi_agent_graph") as mock_graph:
+            # Create a mock that has an ainvoke method
+            mock_graph.ainvoke = AsyncMock(return_value=mock_response)
 
-            async def mock_query(*args, **kwargs):
-                return mock_response
-
-            mock_agent.query = mock_query
-
-            response = client.post("/query", json=query_data)
+            response = client.post("/agents/query", json=query_data)
 
             assert response.status_code == 200
             data = response.json()
             assert data["query"] == "What is machine learning?"
-            assert "answer" in data
+            assert data["answer"] == "Machine learning is a subset of AI..."
             assert len(data["sources"]) == 1
             assert data["sources"][0]["similarity_score"] == 0.85
+            assert data["confidence_score"] == 0.85
 
     async def test_query_endpoint_empty_query(self, client):
         """Test query endpoint with empty query."""
-        # Mock agent to avoid 503
-        with patch("app.main.rag_agent") as mock_agent:  # noqa: F841
+        # Mock multi-agent graph
+        with patch("app.main.multi_agent_graph") as mock_graph:  # noqa: F841
             query_data = {"query": ""}
 
-            response = client.post("/query", json=query_data)
+            response = client.post("/agents/query", json=query_data)
 
             assert response.status_code == 422  # Pydantic validation error
             data = response.json()
@@ -149,36 +148,30 @@ class TestAPIIntegration:
             assert response.headers.get("access-control-allow-origin") == "*"
             assert response.headers.get("access-control-allow-credentials") == "true"
 
-    async def test_error_handling_rag_error(self, client):
-        """Test RAG agent error handling."""
-        from app.rag_agent import RAGAgentError
-
-        with patch("app.main.rag_agent") as mock_agent:
-
-            async def mock_query(*args, **kwargs):
-                raise RAGAgentError("Query processing failed")
-
-            mock_agent.query = mock_query
+    async def test_error_handling_multi_agent_error(self, client):
+        """Test multi-agent error handling."""
+        with patch("app.main.multi_agent_graph") as mock_graph:
+            mock_compiled_graph = mock_graph.compile.return_value
+            mock_compiled_graph.ainvoke.side_effect = Exception(
+                "Multi-agent processing failed"
+            )
 
             query_data = {"query": "test query"}
-            response = client.post("/query", json=query_data)
+            response = client.post("/agents/query", json=query_data)
 
-            assert response.status_code == 500  # Now returns 500 for agent errors
+            assert response.status_code == 500  # Returns 500 for agent errors
             data = response.json()
-            assert "Query processing failed" in data["detail"]
+            assert "Multi-agent query failed" in data["detail"]
 
     async def test_error_handling_unexpected_error(self, client):
         """Test unexpected error handling."""
-        with patch("app.main.rag_agent") as mock_agent:
-
-            async def mock_query(*args, **kwargs):
-                raise Exception("Unexpected error")
-
-            mock_agent.query = mock_query
+        with patch("app.main.multi_agent_graph") as mock_graph:
+            mock_compiled_graph = mock_graph.compile.return_value
+            mock_compiled_graph.ainvoke.side_effect = Exception("Unexpected error")
 
             query_data = {"query": "test query"}
-            response = client.post("/query", json=query_data)
+            response = client.post("/agents/query", json=query_data)
 
             assert response.status_code == 500
             data = response.json()
-            assert "Query processing failed" in data["detail"]
+            assert "Multi-agent query failed" in data["detail"]

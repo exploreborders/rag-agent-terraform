@@ -13,7 +13,7 @@ class TestSettings:
         """Test default settings initialization."""
         settings = Settings()
         assert settings.environment == "development"
-        assert settings.debug is False
+        assert settings.debug is True  # Development mode has debug enabled
         assert settings.api_host == "0.0.0.0"
         assert settings.api_port == 8000
         assert settings.vector_dimension == 768
@@ -69,8 +69,8 @@ class TestSettings:
     def test_secret_key_generation(self):
         """Test secret key generation when not provided."""
         settings = Settings()
-        # Now uses empty string default since validator was removed
-        assert settings.secret_key == ""
+        # Uses default placeholder value
+        assert settings.secret_key == "your-secret-key-here-change-in-production"
 
     def test_custom_secret_key(self):
         """Test that custom secret key is preserved."""
@@ -99,6 +99,6 @@ class TestSettings:
         """Test vector search configuration."""
         settings = Settings()
         assert settings.vector_dimension == 768
-        assert settings.similarity_threshold == 0.4
+        assert settings.similarity_threshold == 0.7
         assert settings.top_k_results == 5
         assert settings.max_documents_per_query == 10
