@@ -246,32 +246,52 @@ class MCPCoordinator:
             from datetime import datetime
             import pytz
 
-            timezone_str = parameters.get("timezone", "UTC")
+            timezone_str = parameters.get(
+                "timezone", "local"
+            )  # Default to local instead of UTC
 
-            # Mock time reference results
-            current_time = datetime.now(pytz.UTC)
+            # Get current time in UTC first
+            current_time_utc = datetime.now(pytz.UTC)
 
-            if timezone_str == "now":
-                time_result = current_time
-            else:
-                time_result = current_time
+            # Determine target timezone - default to local system timezone
+            if timezone_str == "local":
+                # Try to get local timezone, fallback to a common one
+                try:
+                    import time
 
-            # Convert to requested timezone
-            try:
-                target_tz = pytz.timezone(timezone_str)
-                converted_time = time_result.astimezone(target_tz)
-            except:
+                    local_tz_name = (
+                        time.tzname[0] if time.tzname else "America/New_York"
+                    )
+                    target_tz = pytz.timezone(local_tz_name)
+                except:
+                    target_tz = pytz.timezone("America/New_York")  # Fallback
+            elif timezone_str == "UTC":
                 target_tz = pytz.UTC
-                converted_time = time_result
+            else:
+                try:
+                    target_tz = pytz.timezone(timezone_str)
+                except:
+                    target_tz = pytz.UTC  # Fallback to UTC
+
+            # Convert to target timezone
+            local_time = current_time_utc.astimezone(target_tz)
+
+            # Format times in a more human-readable way
+            local_formatted = local_time.strftime("%A, %B %d, %Y at %I:%M:%S %p")
+            utc_formatted = current_time_utc.strftime(
+                "%A, %B %d, %Y at %I:%M:%S %p UTC"
+            )
 
             return {
                 "tool_name": tool_name,
                 "result": {
                     "reference": "now",
                     "requested_timezone": timezone_str,
-                    "utc_time": time_result.isoformat(),
-                    "converted_time": converted_time.isoformat(),
-                    "timezone_name": str(target_tz),
+                    "local_time": local_time.isoformat(),
+                    "local_formatted": f"{local_formatted} {target_tz.zone}",
+                    "utc_time": current_time_utc.isoformat(),
+                    "utc_formatted": utc_formatted,
+                    "timezone_name": target_tz.zone,
                 },
                 "execution_time": execution_time,
                 "timestamp": datetime.utcnow().isoformat(),

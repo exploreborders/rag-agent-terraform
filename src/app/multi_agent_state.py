@@ -4,7 +4,7 @@ from typing import TypedDict, List, Optional, Dict, Any
 from langchain_core.messages import BaseMessage
 
 
-class DockerMultiAgentRAGState(TypedDict):
+class DockerMultiAgentRAGState(TypedDict, total=False):
     """State for the Docker-based Multi-Agent RAG System.
 
     This state manages the flow between query processing, retrieval,
@@ -29,10 +29,23 @@ class DockerMultiAgentRAGState(TypedDict):
     # MCP Tool Results
     mcp_search_results: Optional[Dict[str, Any]]  # Search tool results
 
+    # Agent Processing Results
+    aggregation_results: Optional[
+        Dict[str, Any]
+    ]  # Results from results aggregator agent
+    response_data: Optional[Dict[str, Any]]  # Results from response generator agent
+
+    # Validation Results
+    processing_complete: Optional[bool]  # Whether processing is complete
+    validation_passed: Optional[bool]  # Whether validation passed
+    validation_score: Optional[float]  # Validation score (0-1)
+    validation_details: Optional[Dict[str, Any]]  # Detailed validation results
+    validation_feedback: Optional[str]  # Validation feedback message
+
     # Finale Antwort
     final_response: Optional[str]  # Generated response
-    confidence_score: float  # Response confidence (0-1)
-    sources: List[Dict[str, Any]]  # Cited sources metadata
+    confidence_score: Optional[float]  # Response confidence (0-1)
+    sources: Optional[List[Dict[str, Any]]]  # Cited sources metadata
 
     # Monitoring & Debugging
     processing_time: float  # Total processing time

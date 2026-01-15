@@ -62,7 +62,7 @@ services:
 #### 2. Retrieval Agent
 - **Aufgabe**: Bestehende RAG-Suche in Vektor-Datenbank
 - **Input**: Sanitized Query, Document IDs
-- **Output**: Metadata-only Search Results
+- **Output**: RAG Search Results
 
 #### 3. MCP Research Agent
 - **Aufgabe**: Externe Recherche über MCP Tools
