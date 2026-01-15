@@ -30,6 +30,8 @@ async def query_processor_agent(
     1. Query sanitization (removes sensitive data)
     2. LLM-powered intent classification (RAG, search, code, academic)
     3. Smart agent task assignment with priority levels
+
+    Returns routing decision for next agent(s) to execute.
     """
     import re
     from datetime import datetime
@@ -304,7 +306,7 @@ async def retrieval_agent(
 
     if not sanitized_query:
         logger.warning("Retrieval Agent: No sanitized query provided")
-        return {"retrieved_metadata": []}
+        return {"retrieved_results": []}
 
     # Get task configuration for this agent
     task_config = agent_tasks.get("retrieval", {})
@@ -340,26 +342,28 @@ async def retrieval_agent(
             threshold=0.4,  # Similarity threshold
         )
 
-        # Convert to safe metadata-only results (no content)
-        retrieved_metadata = []
+        # Convert to results with content for response generation
+        retrieved_results = []
         for result in search_results:
-            # Only include metadata, never full content for security
-            metadata_entry = {
+            result_entry = {
                 "document_id": result["document_id"],
                 "filename": result["filename"],
                 "content_type": result["content_type"],
+                "content": result[
+                    "content"
+                ],  # Include actual content for response generation
                 "size": result.get("size", 0),
                 "uploaded_at": result.get("uploaded_at", ""),
                 "similarity_score": result["similarity_score"],
                 "chunk_count": result.get("chunk_count", 0),
                 "metadata": result.get("metadata", {}),
             }
-            retrieved_metadata.append(metadata_entry)
+            retrieved_results.append(result_entry)
 
         # Calculate confidence based on best similarity score
-        if retrieved_metadata:
+        if retrieved_results:
             similarity_scores = []
-            for r in retrieved_metadata:
+            for r in retrieved_results:
                 score = r.get("similarity_score")
                 if isinstance(score, (int, float)):
                     similarity_scores.append(float(score))
@@ -370,13 +374,13 @@ async def retrieval_agent(
         processing_time = (datetime.utcnow() - start_time).total_seconds()
 
         logger.info(
-            f"Retrieval Agent: Found {len(retrieved_metadata)} results in {processing_time:.2f}s"
+            f"Retrieval Agent: Found {len(retrieved_results)} results in {processing_time:.2f}s"
         )
 
         return {
-            "retrieved_metadata": retrieved_metadata,
+            "retrieved_results": retrieved_results,
             "retrieval_confidence": confidence_score,
-            "retrieval_count": len(retrieved_metadata),
+            "retrieval_count": len(retrieved_results),
             "processing_time": processing_time,
         }
 
@@ -385,7 +389,7 @@ async def retrieval_agent(
         processing_time = (datetime.utcnow() - start_time).total_seconds()
 
         return {
-            "retrieved_metadata": [],
+            "retrieved_results": [],
             "retrieval_confidence": 0.0,
             "retrieval_count": 0,
             "processing_time": processing_time,
@@ -690,27 +694,156 @@ async def results_aggregator_placeholder(
 ) -> Dict[str, Any]:
     """Platzhalter für Results Aggregator."""
     logger.info("Results Aggregator placeholder executed")
-    return {
-        "confidence_score": 0.8,
-        "sources": [
+
+    # Combine retrieval and MCP results
+    retrieved_results = state.get("retrieved_results", [])
+    mcp_results = state.get("mcp_search_results", {})
+
+    # Create sources from available data (must match QuerySource model)
+    sources = []
+
+    # Add retrieval results
+    for result in retrieved_results:
+        sources.append(
             {
-                "document_id": "placeholder_doc_1",
-                "filename": "sample.pdf",
-                "similarity_score": 0.85,
+                "document_id": result.get("document_id", ""),
+                "filename": result.get("filename", ""),
+                "content_type": result.get(
+                    "content_type", "application/pdf"
+                ),  # Default if not available
+                "chunk_text": result.get(
+                    "content",
+                    f"Retrieved document: {result.get('filename', 'Unknown')}. Similarity: {result.get('similarity_score', 0.0):.2f}",
+                ),  # Use actual content
+                "similarity_score": result.get("similarity_score", 0.0),
+                "metadata": {
+                    "source": "retrieval",
+                    "size": result.get("size", 0),
+                    "uploaded_at": result.get("uploaded_at", ""),
+                    "chunk_count": result.get("chunk_count", 0),
+                },
             }
-        ],
+        )
+
+    # Add MCP results if available
+    if mcp_results and "web_search" in mcp_results:
+        for item in mcp_results["web_search"][:3]:  # Limit to 3
+            sources.append(
+                {
+                    "document_id": f"mcp_web_{hash(item.get('url', '')) % 1000}",
+                    "filename": item.get("title", "Web Result")[:50],
+                    "content_type": "text/html",  # Web content
+                    "chunk_text": item.get(
+                        "snippet", "Web search result without snippet"
+                    ),  # Use snippet as content
+                    "similarity_score": item.get("relevance_score", 0.7),
+                    "metadata": {
+                        "source": "web_search",
+                        "url": item.get("url", ""),
+                        "tool": item.get("tool", "search"),
+                    },
+                }
+            )
+
+    # Calculate confidence based on available sources
+    confidence_score = 0.5  # Default
+    if sources:
+        avg_similarity = sum(s.get("similarity_score", 0) for s in sources) / len(
+            sources
+        )
+        confidence_score = min(0.9, avg_similarity + 0.2)  # Boost confidence slightly
+
+    return {
+        "confidence_score": confidence_score,
+        "sources": sources[:5],  # Limit total sources
     }
 
 
 async def response_generator_placeholder(
     state: DockerMultiAgentRAGState,
 ) -> Dict[str, Any]:
-    """Platzhalter für Response Generator."""
-    logger.info("Response Generator placeholder executed")
-    return {
-        "final_response": f"Placeholder response for query: {state.get('sanitized_query', 'Unknown')}",
-        "processing_time": 1.5,
-    }
+    """Response Generator: Creates LLM-powered answers using retrieved content."""
+    from app.ollama_client import OllamaClient
+    from app.config import settings
+    from datetime import datetime
+
+    logger.info("Response Generator executing with LLM")
+
+    start_time = datetime.utcnow()
+    sanitized_query = state.get("sanitized_query", "Unknown query")
+    sources = state.get("sources", [])
+    confidence_score = state.get("confidence_score", 0.0)
+
+    try:
+        # Prepare context from sources
+        context_parts = []
+        retrieval_sources = []
+
+        for source in sources:
+            if source.get("metadata", {}).get("source") == "retrieval":
+                # Use the chunk_text which now contains actual content
+                context_parts.append(source.get("chunk_text", ""))
+                retrieval_sources.append(source)
+
+        context = "\n\n".join(context_parts) if context_parts else ""
+
+        # If we have retrieval sources with content, generate LLM response
+        if context and retrieval_sources:
+            ollama_client = OllamaClient()
+
+            system_prompt = f"""You are a helpful AI assistant that answers questions based on the provided context from documents.
+If the context doesn't contain enough information to answer the question, say so clearly but also provide any relevant insights you can derive.
+
+Context from documents:
+{context}
+
+Answer the user's question based on the context above. Be concise but comprehensive. Include specific references to the source documents when relevant."""
+
+            generate_request = OllamaGenerateRequest(
+                model=settings.ollama_model,
+                prompt=sanitized_query,
+                system=system_prompt,
+                options={
+                    "temperature": 0.1,  # Low temperature for consistent answers
+                    "top_p": 0.9,
+                    "num_predict": 1024,
+                },
+            )
+
+            completion = await ollama_client.generate(generate_request)
+            answer = completion.response.strip()
+
+        else:
+            # Fallback response when no content available
+            answer = f"I found {len(sources)} relevant source(s) for your query: '{sanitized_query}'. "
+            if confidence_score > 0.7:
+                answer += "I'm fairly confident in these results."
+            else:
+                answer += "These results may need further verification."
+
+        processing_time = (datetime.utcnow() - start_time).total_seconds()
+
+        return {
+            "final_response": answer,
+            "processing_time": processing_time,
+        }
+
+    except Exception as e:
+        logger.error(f"Response generation failed: {e}")
+        # Fallback to simple response
+        processing_time = (datetime.utcnow() - start_time).total_seconds()
+
+        fallback_response = f"I found {len(sources)} relevant source(s) for your query: '{sanitized_query}'. "
+        if confidence_score > 0.7:
+            fallback_response += "I'm fairly confident in these results."
+        else:
+            fallback_response += "These results may need further verification."
+
+        return {
+            "final_response": fallback_response,
+            "processing_time": processing_time,
+            "error": f"LLM generation failed: {str(e)}",
+        }
 
 
 async def validation_agent_placeholder(
@@ -718,7 +851,38 @@ async def validation_agent_placeholder(
 ) -> Dict[str, Any]:
     """Platzhalter für Validation Agent."""
     logger.info("Validation Agent placeholder executed")
-    return {"processing_complete": True}
+
+    # Basic validation: check if we have a response and sources
+    final_response = state.get("final_response", "")
+    sources = state.get("sources", [])
+    confidence_score = state.get("confidence_score", 0.0)
+
+    # Simple validation logic
+    validation_passed = bool(final_response and len(final_response) > 10)
+    if sources:
+        validation_passed = validation_passed and (confidence_score > 0.3)
+
+    # Update processing time to include validation
+    processing_time = state.get("processing_time", 0.0) + 0.1
+
+    return {
+        "processing_complete": validation_passed,
+        "validation_passed": validation_passed,
+        "processing_time": processing_time,
+    }
+
+
+def route_after_query_processor(state: DockerMultiAgentRAGState) -> str:
+    """Route decision after query processor based on agent tasks."""
+    agent_tasks = state.get("agent_tasks", {})
+
+    # Always run retrieval first as baseline RAG (it's always included in create_agent_tasks)
+    if "retrieval" in agent_tasks:
+        return "retrieval_agent"
+
+    # Fallback: should not happen since retrieval is always included
+    logger.warning("No retrieval task found, routing to results aggregator")
+    return "results_aggregator"
 
 
 def create_docker_multi_agent_graph(mcp_client: DockerMCPClient = None) -> StateGraph:
@@ -743,11 +907,24 @@ def create_docker_multi_agent_graph(mcp_client: DockerMCPClient = None) -> State
     builder.add_node("response_generator", response_generator_placeholder)
     builder.add_node("validation_agent", validation_agent_placeholder)
 
-    # Definiere Ausführungsfluss (vereinfacht für Phase 1)
-    builder.add_edge("query_processor", "retrieval_agent")
-    builder.add_edge("query_processor", "mcp_search_agent")
-    builder.add_edge("retrieval_agent", "results_aggregator")
+    # Definiere Ausführungsfluss mit bedingtem Routing
+    # Query processor routes to either retrieval or directly to aggregator
+    builder.add_conditional_edges(
+        "query_processor",
+        route_after_query_processor,
+        {
+            "retrieval_agent": "retrieval_agent",
+            "results_aggregator": "results_aggregator",
+        },
+    )
+
+    # Retrieval agent always goes to MCP search (parallel execution)
+    builder.add_edge("retrieval_agent", "mcp_search_agent")
+
+    # MCP search goes to results aggregator
     builder.add_edge("mcp_search_agent", "results_aggregator")
+
+    # Continue with response generation
     builder.add_edge("results_aggregator", "response_generator")
     builder.add_edge("response_generator", "validation_agent")
     builder.add_edge("validation_agent", END)
@@ -755,7 +932,7 @@ def create_docker_multi_agent_graph(mcp_client: DockerMCPClient = None) -> State
     # Setze Startpunkt
     builder.set_entry_point("query_processor")
 
-    logger.info("Docker Multi-Agent Graph created with placeholder nodes")
+    logger.info("Docker Multi-Agent Graph created with conditional routing")
     return builder
 
 

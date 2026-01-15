@@ -15,7 +15,6 @@ from app.config import settings
 from app.models import (
     HealthStatus,
     QueryRequest,
-    QueryResponse,
     RootResponse,
     DocumentResponse,
     DocumentListResponse,
@@ -46,7 +45,7 @@ multi_agent_graph = None  # LangGraph Multi-Agent System
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan context manager."""
-    global rag_agent, RAG_DOCUMENTS_PROCESSED, RAG_QUERIES_PROCESSED
+    global rag_agent, RAG_DOCUMENTS_PROCESSED, RAG_QUERIES_PROCESSED, multi_agent_graph
 
     # Startup
     logger.info("Starting RAG Agent application...")
@@ -75,6 +74,35 @@ async def lifespan(app: FastAPI):
         rag_agent = RAGAgent()
         # Don't initialize during startup - do it lazily on first request
         logger.info("RAG Agent created (will initialize on first use)")
+
+        # Initialize Multi-Agent System (Phase 1)
+        logger.info("Initializing Multi-Agent System...")
+        try:
+            # Import multi-agent modules
+            from app.multi_agent_graph import create_docker_multi_agent_graph
+            from app.graph_persistence import setup_graph_persistence
+            from app.mcp_client import mcp_client
+
+            logger.info("Setting up graph persistence...")
+            checkpointer = await setup_graph_persistence(settings.database_url)
+
+            logger.info("Connecting MCP client...")
+            await mcp_client.connect()
+
+            logger.info("Creating and compiling multi-agent graph...")
+            graph = create_docker_multi_agent_graph(mcp_client)
+            multi_agent_graph = graph.compile(checkpointer=checkpointer)
+
+            logger.info("Multi-Agent System initialized successfully!")
+
+        except Exception as e:
+            logger.error(f"Multi-Agent System initialization failed: {e}")
+            import traceback
+
+            logger.error(
+                f"Multi-Agent initialization traceback: {traceback.format_exc()}"
+            )
+            logger.warning("Continuing with legacy RAG system only")
 
         # Skip document counter initialization during startup
         # It will be done lazily when first needed
@@ -363,38 +391,6 @@ async def delete_document(document_id: str):
 
 
 @app.post(
-    "/query",
-    response_model=QueryResponse,
-    summary="Query the RAG system",
-    description="Query the Retrieval-Augmented Generation system with document-grounded responses using legacy implementation.",
-)
-async def query_documents(request: QueryRequest):
-    """Query the RAG system (Legacy Endpoint)."""
-    try:
-        if rag_agent is None:
-            raise HTTPException(status_code=503, detail="RAG Agent not initialized")
-
-        # Process query
-        result = await rag_agent.query(
-            query=request.query,
-            document_ids=request.document_ids,
-            top_k=request.top_k,
-            filters=request.filters,
-        )
-
-        if RAG_QUERIES_PROCESSED:
-            RAG_QUERIES_PROCESSED.inc()
-
-        return result
-
-    except Exception as e:
-        logger.error(f"Query processing failed: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Query processing failed: {str(e)}"
-        )
-
-
-@app.post(
     "/agents/query",
     response_model=AgentQueryResponse,
     summary="Multi-agent query",
@@ -404,9 +400,11 @@ async def multi_agent_query(request: QueryRequest):
     """Multi-Agenten-Abfrage mit LangGraph (Phase 1)."""
     try:
         if multi_agent_graph is None:
-            # Fallback to legacy system
-            logger.warning("Multi-Agent System not available, using legacy RAG")
-            return await query_documents(request)
+            # Multi-agent system required
+            raise HTTPException(
+                status_code=503,
+                detail="Multi-Agent System not available. Only multi-agent queries are supported.",
+            )
 
         # Create initial state
         from app.multi_agent_state import create_initial_state
@@ -423,7 +421,9 @@ async def multi_agent_query(request: QueryRequest):
 
         # Execute multi-agent graph
         logger.info(f"Executing multi-agent query: {request.query}")
-        result = await multi_agent_graph.ainvoke(initial_state)
+        # Provide required configuration for the checkpointer
+        config = {"configurable": {"thread_id": "api_query", "thread_ts": "latest"}}
+        result = await multi_agent_graph.ainvoke(initial_state, config=config)
 
         # Format response
         response = {
@@ -449,9 +449,10 @@ async def multi_agent_query(request: QueryRequest):
 
     except Exception as e:
         logger.error(f"Multi-agent query failed: {e}")
-        # Fallback to legacy system
-        logger.info("Falling back to legacy RAG system")
-        return await query_documents(request)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Multi-agent query failed: {str(e)}. Legacy system no longer available.",
+        )
 
 
 @app.get(
@@ -1203,34 +1204,7 @@ async def test_mcp_tools(
         }
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Application startup event."""
-    logger.info("RAG Agent application started")
-
-    # Initialize Multi-Agent System (Phase 1)
-    global multi_agent_graph
-    try:
-        # Import multi-agent modules
-        from app.multi_agent_graph import create_docker_multi_agent_graph
-        from app.graph_persistence import setup_graph_persistence
-        from app.mcp_client import mcp_client
-
-        # Setup graph persistence
-        checkpointer = await setup_graph_persistence(settings.database_url)
-
-        # Initialize MCP client
-        await mcp_client.connect()
-
-        # Create and compile multi-agent graph
-        graph = create_docker_multi_agent_graph(mcp_client)
-        multi_agent_graph = graph.compile(checkpointer=checkpointer)
-
-        logger.info("Multi-Agent System initialized successfully")
-
-    except Exception as e:
-        logger.warning(f"Multi-Agent System initialization failed: {e}")
-        logger.info("Continuing with legacy RAG system only")
+# Multi-agent initialization moved to lifespan context manager
 
 
 @app.on_event("shutdown")

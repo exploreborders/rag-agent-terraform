@@ -1,9 +1,9 @@
-"""PostgreSQL-based persistence for LangGraph checkpoints."""
+"""Simple persistence for LangGraph checkpoints (Phase 1)."""
 
 import logging
 from typing import Optional
 
-from langgraph.checkpoint.postgres import AsyncPostgresSaver
+from langgraph.checkpoint.memory import MemorySaver
 
 from app.config import settings
 
@@ -16,28 +16,23 @@ class GraphPersistenceError(Exception):
     pass
 
 
-async def setup_graph_persistence(db_url: Optional[str] = None) -> AsyncPostgresSaver:
-    """Initialisiere PostgreSQL Checkpointer für LangGraph.
+async def setup_graph_persistence(db_url: Optional[str] = None) -> MemorySaver:
+    """Initialisiere einfachen In-Memory Checkpointer für LangGraph (Phase 1).
 
     Args:
-        db_url: Datenbank-URL (optional, verwendet settings.database_url)
+        db_url: Datenbank-URL (optional, wird für Phase 1 ignoriert)
 
     Returns:
-        Konfigurierter AsyncPostgresSaver
+        Konfigurierter MemorySaver
 
-    Raises:
-        GraphPersistenceError: Bei Initialisierungsfehlern
+    Note:
+        Phase 1 verwendet In-Memory Persistence. PostgreSQL wird in späteren Phasen hinzugefügt.
     """
-    db_url = db_url or settings.database_url
-
     try:
-        # Erstelle Checkpointer-Instanz
-        checkpointer = AsyncPostgresSaver.from_conn_string(db_url)
+        # Verwende einfachen Memory Checkpointer für Phase 1
+        checkpointer = MemorySaver()
 
-        # Initialisiere Datenbankschema für Checkpoints
-        await checkpointer.setup()
-
-        logger.info("LangGraph PostgreSQL persistence initialized successfully")
+        logger.info("LangGraph Memory persistence initialized successfully (Phase 1)")
         return checkpointer
 
     except Exception as e:
@@ -45,7 +40,7 @@ async def setup_graph_persistence(db_url: Optional[str] = None) -> AsyncPostgres
         raise GraphPersistenceError(f"Graph persistence setup failed: {e}")
 
 
-async def get_checkpoint_stats(checkpointer: AsyncPostgresSaver) -> dict:
+async def get_checkpoint_stats(checkpointer: MemorySaver) -> dict:
     """Hole Statistiken über gespeicherte Checkpoints.
 
     Args:
@@ -55,14 +50,11 @@ async def get_checkpoint_stats(checkpointer: AsyncPostgresSaver) -> dict:
         Dictionary mit Checkpoint-Statistiken
     """
     try:
-        # Hier könnten wir SQL-Queries ausführen um Statistiken zu sammeln
-        # Für Phase 1 reicht eine Basis-Implementierung
+        # Für MemorySaver haben wir begrenzte Statistiken
         return {
             "status": "operational",
-            "checkpointer_type": "AsyncPostgresSaver",
-            "database_url": checkpointer.conn_string
-            if hasattr(checkpointer, "conn_string")
-            else "configured",
+            "checkpointer_type": "MemorySaver",
+            "note": "Phase 1: In-memory persistence",
         }
     except Exception as e:
         logger.warning(f"Failed to get checkpoint stats: {e}")
@@ -70,7 +62,7 @@ async def get_checkpoint_stats(checkpointer: AsyncPostgresSaver) -> dict:
 
 
 async def cleanup_old_checkpoints(
-    checkpointer: AsyncPostgresSaver, max_age_days: int = 30
+    checkpointer: MemorySaver, max_age_days: int = 30
 ) -> int:
     """Räume alte Checkpoints auf.
 
@@ -82,10 +74,9 @@ async def cleanup_old_checkpoints(
         Anzahl der gelöschten Checkpoints
     """
     try:
-        # Hier würde die Cleanup-Logik implementiert werden
-        # Für Phase 1 als Platzhalter
-        logger.info(f"Checkpoint cleanup requested (max_age: {max_age_days} days)")
-        return 0  # Placeholder
+        # MemorySaver hat keine persistenten Checkpoints zum Aufräumen
+        logger.info(f"Memory checkpoint cleanup requested (no-op for Phase 1)")
+        return 0
     except Exception as e:
         logger.error(f"Failed to cleanup checkpoints: {e}")
         return 0
@@ -96,9 +87,9 @@ class GraphPersistenceManager:
 
     def __init__(self, db_url: Optional[str] = None):
         self.db_url = db_url or settings.database_url
-        self.checkpointer: Optional[AsyncPostgresSaver] = None
+        self.checkpointer: Optional[MemorySaver] = None
 
-    async def initialize(self) -> AsyncPostgresSaver:
+    async def initialize(self) -> MemorySaver:
         """Initialisiere Persistence-System."""
         if self.checkpointer is None:
             self.checkpointer = await setup_graph_persistence(self.db_url)
@@ -122,11 +113,11 @@ class GraphPersistenceManager:
             if self.checkpointer is None:
                 return {"status": "not_initialized"}
 
-            # Versuche eine Operation durchzuführen
+            # Teste einfache Operation
             stats = await self.get_stats()
             return {
                 "status": "healthy",
-                "checkpointer": "AsyncPostgresSaver",
+                "checkpointer": "MemorySaver",
                 "stats": stats,
             }
         except Exception as e:
