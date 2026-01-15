@@ -261,10 +261,12 @@ def create_agent_tasks(query: str, intent: Dict[str, Any]) -> Dict[str, Any]:
 
     # Always include retrieval agent for RAG as baseline (check existing docs first)
     # This ensures we always check the knowledge base before external sources
+    # For document-specific queries, get more results to capture complete information
+    max_results = 20 if intent["primary_intent"] == "rag_only" else 10
     tasks["retrieval"] = {
         "query": query,
         "intent": "baseline_retrieval",
-        "max_results": 10,
+        "max_results": max_results,
         "priority": "high" if intent["primary_intent"] == "rag_only" else "normal",
     }
 
@@ -794,29 +796,41 @@ async def response_generator_placeholder(
     confidence_score = state.get("confidence_score", 0.0)
 
     try:
-        # Prepare context from sources
+        # Prepare context from sources - collect all retrieval content
         context_parts = []
         retrieval_sources = []
 
         for source in sources:
             if source.get("metadata", {}).get("source") == "retrieval":
                 # Use the chunk_text which now contains actual content
-                context_parts.append(source.get("chunk_text", ""))
-                retrieval_sources.append(source)
+                chunk_text = source.get("chunk_text", "")
+                if chunk_text.strip():  # Only add non-empty chunks
+                    context_parts.append(
+                        f"[Chunk {len(context_parts) + 1}]:\n{chunk_text}"
+                    )
+                    retrieval_sources.append(source)
 
+        # Combine all context for comprehensive analysis
         context = "\n\n".join(context_parts) if context_parts else ""
 
         # If we have retrieval sources with content, generate LLM response
         if context and retrieval_sources:
             ollama_client = OllamaClient()
 
+            # Enhanced system prompt for better synthesis across chunks
             system_prompt = f"""You are a helpful AI assistant that answers questions based on the provided context from documents.
-If the context doesn't contain enough information to answer the question, say so clearly but also provide any relevant insights you can derive.
 
-Context from documents:
+CRITICAL INSTRUCTIONS:
+1. Analyze ALL provided chunks comprehensively - information about the same topic may be split across multiple chunks
+2. Synthesize information from multiple chunks to provide complete answers
+3. If the question asks for a list (like "21 design patterns"), look across all chunks to find and compile the complete list
+4. Be specific and reference the source chunks when providing information
+5. If information is incomplete across chunks, clearly state what you found and what might be missing
+
+Context from documents (multiple chunks):
 {context}
 
-Answer the user's question based on the context above. Be concise but comprehensive. Include specific references to the source documents when relevant."""
+Answer the user's question based on the comprehensive context above."""
 
             generate_request = OllamaGenerateRequest(
                 model=settings.ollama_model,
@@ -825,7 +839,7 @@ Answer the user's question based on the context above. Be concise but comprehens
                 options={
                     "temperature": 0.1,  # Low temperature for consistent answers
                     "top_p": 0.9,
-                    "num_predict": 1024,
+                    "num_predict": 2048,  # Increased for comprehensive answers
                 },
             )
 
