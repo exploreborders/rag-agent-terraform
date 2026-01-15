@@ -86,7 +86,7 @@ class RAGAgent:
 
         # Initialize components
         await self.vector_store.initialize_schema()
-        await self.memory.initialize()
+        await self.memory.connect()
 
         self._initialized = True
         logger.info("RAG Agent initialized successfully")

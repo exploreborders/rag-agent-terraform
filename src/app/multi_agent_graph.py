@@ -376,6 +376,9 @@ async def retrieval_agent(
         logger.info(
             f"Retrieval Agent: Found {len(retrieved_results)} results in {processing_time:.2f}s"
         )
+        logger.info(
+            f"Retrieval Agent: Sample result: {retrieved_results[0] if retrieved_results else 'No results'}"
+        )
 
         return {
             "retrieved_results": retrieved_results,
@@ -698,6 +701,22 @@ async def results_aggregator_placeholder(
     # Combine retrieval and MCP results
     retrieved_results = state.get("retrieved_results", [])
     mcp_results = state.get("mcp_search_results", {})
+
+    logger.info(
+        f"Results Aggregator: Found {len(retrieved_results)} retrieved results, "
+        f"MCP results: {bool(mcp_results)}"
+    )
+    logger.info(
+        f"Results Aggregator: mcp_results keys: {list(mcp_results.keys()) if mcp_results else 'None'}"
+    )
+    logger.info(f"Results Aggregator: Full state keys: {list(state.keys())}")
+    if retrieved_results:
+        logger.info(
+            f"Results Aggregator: First retrieved result keys: {list(retrieved_results[0].keys())}"
+        )
+        logger.info(
+            f"Results Aggregator: First retrieved result filename: {retrieved_results[0].get('filename', 'N/A')}"
+        )
 
     # Create sources from available data (must match QuerySource model)
     sources = []

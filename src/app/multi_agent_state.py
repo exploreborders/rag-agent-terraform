@@ -21,8 +21,8 @@ class DockerMultiAgentRAGState(TypedDict):
     agent_results: Dict[str, Any]  # Results from agent execution
     intent_classification: Optional[Dict[str, Any]]  # Query intent analysis results
 
-    # Sichere Daten (nur Metadaten, keine Volltexte)
-    retrieved_metadata: List[Dict[str, Any]]  # Safe document metadata only
+    # Retrieval Results (full content for LLM processing)
+    retrieved_results: List[Dict[str, Any]]  # Document retrieval results with content
     allowed_doc_ids: List[str]  # Authorized document IDs
     retrieval_confidence: Optional[float]  # Confidence in retrieval results
 
@@ -79,7 +79,7 @@ def create_initial_state(
         "agent_tasks": {},
         "agent_results": {},
         "intent_classification": {},
-        "retrieved_metadata": [],
+        "retrieved_results": [],
         "retrieval_confidence": 0.0,
         "allowed_doc_ids": [],
         "mcp_search_results": None,
@@ -105,7 +105,7 @@ def sanitize_state_for_llm(state: DockerMultiAgentRAGState) -> Dict[str, Any]:
     # Only include safe fields
     safe_fields = {
         "sanitized_query",
-        "retrieved_metadata",
+        "retrieved_results",
         "mcp_search_results",
         "confidence_score",
         "sources",
