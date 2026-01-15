@@ -1589,7 +1589,7 @@ def aggregate_research_results(
 
     # Apply result limits and calculate totals
     # Prioritize higher relevance scores and limit per category
-    for category in ["web_search", "academic_papers", "arxiv_papers", "biorxiv_papers"]:
+    for category in ["web_search"]:
         results = aggregated[category]
         # Sort by relevance score descending
         results.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
@@ -1654,17 +1654,20 @@ async def results_aggregator_agent(
 
     if not workflow_results:
         logger.warning("No workflow results found for aggregation")
+        processing_time = (datetime.utcnow() - start_time).total_seconds()
         # Store empty results in state for debugging
         state["aggregation_results"] = {}
-        state["processing_time"] = (
-            state.get("processing_time", 0.0)
-            + (datetime.utcnow() - start_time).total_seconds()
-        )
+        state["processing_time"] = state.get("processing_time", 0.0) + processing_time
         return None
 
-    # Step 1: RANKING - Extract and rank all sources
-    logger.info("📊 Step 1: Ranking sources by relevance and quality")
+    # Initialize variables
     all_sources = []
+    tool_count = 0
+    workflow_details = {}
+    aggregated_output = {
+        "sources": [],
+        "metadata": {},
+    }
 
     for workflow_name, workflow_data in workflow_results.items():
         # Extract retrieval results
@@ -1685,197 +1688,34 @@ async def results_aggregator_agent(
             }
             all_sources.append(source)
 
-        # Extract MCP search results
+        # Extract MCP search results - only web search category
         mcp_results = workflow_data.get("mcp_search_results", {})
-        for category, results in mcp_results.items():
-            if isinstance(results, list):
-                for result in results:
-                    if isinstance(result, dict):
-                        tool_name = result.get("tool", category)
-                        source = {
-                            "document_id": f"{tool_name}_{workflow_name}_{hash(str(result)) % 1000}",
-                            "filename": f"{tool_name}_result_{workflow_name}.txt",
-                            "content_type": "text/plain",
-                            "chunk_text": result.get(
-                                "snippet", result.get("title", result.get("result", ""))
-                            ),
-                            "similarity_score": result.get("relevance_score", 0.5),
-                            "metadata": {
-                                "tool_name": tool_name,
-                                "workflow_origin": workflow_name,
-                                "source_type": "tool_result",
-                                "category": category,
-                                "ranking_score": 0.0,  # Will be calculated
-                            },
-                        }
-                        all_sources.append(source)
-
-    # Calculate ranking scores for all sources
-    ranked_sources = await rank_sources_by_relevance(all_sources, query)
-
-    # Step 2: DEDUPLICATION - Remove redundant information
-    logger.info("🔄 Step 2: Deduplicating redundant information")
-    deduplicated_sources = await deduplicate_sources_intelligently(ranked_sources)
-
-    processing_time = (datetime.utcnow() - start_time).total_seconds()
-
-    logger.info(
-        f"✅ Results Aggregator Agent completed: {len(ranked_sources)} ranked, "
-        f"{len(deduplicated_sources)} deduplicated in {processing_time:.2f}s"
-    )
-
-    # Return results for LangGraph to merge into state
-    logger.info(
-        f"Results Aggregator returning aggregation_results with {len(deduplicated_sources)} sources"
-    )
-    return {
-        "aggregation_results": {
-            "ranked_sources": ranked_sources,
-            "deduplicated_sources": deduplicated_sources,
-            "aggregation_metadata": {
-                "total_workflows": len(workflow_results),
-                "total_raw_sources": len(all_sources),
-                "total_ranked_sources": len(ranked_sources),
-                "total_deduplicated_sources": len(deduplicated_sources),
-                "processing_time": processing_time,
-            },
-        },
-        "processing_time": processing_time,
-    }
-
-    # Check for multi-workflow results
-    workflow_results = state.get("workflow_results", {})
-    agent_tasks = state.get("agent_tasks", {})
-
-    if workflow_results:
-        # Multi-workflow aggregation
-        return await aggregate_multi_workflow_results(state)
-
-    # Fallback to single-workflow aggregation (legacy compatibility)
-    retrieved_results = state.get("retrieved_results", [])
-    mcp_results = state.get("mcp_search_results", {})
-
-    logger.info(
-        f"Results Aggregator (legacy): Found {len(retrieved_results)} retrieved results, "
-        f"MCP results: {bool(mcp_results)}"
-    )
-
-    # Create legacy sources format for backward compatibility
-    sources = []
-
-    # Add retrieval results
-    for result in retrieved_results:
-        sources.append(
-            {
-                "document_id": result.get("document_id", ""),
-                "filename": result.get("filename", ""),
-                "content_type": result.get("content_type", "application/pdf"),
-                "chunk_text": result.get(
-                    "content",
-                    f"Retrieved document: {result.get('filename', 'Unknown')}. Similarity: {result.get('similarity_score', 0.0):.2f}",
-                ),
-                "similarity_score": result.get("similarity_score", 0.0),
-                "metadata": {
-                    "source": "retrieval",
-                    "size": result.get("size", 0),
-                    "uploaded_at": result.get("uploaded_at", ""),
-                    "chunk_count": result.get("chunk_count", 0),
-                },
-            }
-        )
-
-    # Calculate confidence
-    confidence_score = 0.5
-    if sources:
-        avg_similarity = sum(s.get("similarity_score", 0) for s in sources) / len(
-            sources
-        )
-        confidence_score = min(0.9, avg_similarity + 0.2)
-
-        result = {
-            "aggregation_results": {
-                "ranked_sources": ranked_sources,
-                "deduplicated_sources": deduplicated_sources,
-                "aggregation_metadata": {
-                    "total_workflows": len(workflow_results),
-                    "total_raw_sources": len(all_sources),
-                    "total_ranked_sources": len(ranked_sources),
-                    "total_deduplicated_sources": len(deduplicated_sources),
-                    "processing_time": processing_time,
-                },
-            },
-            "processing_time": processing_time,
-        }
-        logger.info(
-            f"Results Aggregator returning: aggregation_results keys = {list(result['aggregation_results'].keys())}"
-        )
-        return result
-
-
-async def aggregate_multi_workflow_results(
-    state: DockerMultiAgentRAGState,
-) -> Dict[str, Any]:
-    """Aggregate results from multiple parallel workflows with structured output."""
-    # Multi-workflow coordinator stores results under agent_results.workflow_results
-    agent_results = state.get("agent_results", {})
-    workflow_results = agent_results.get("workflow_results", {})
-    agent_tasks = state.get("agent_tasks", {})
-
-    logger.info(
-        f"Aggregating {len(workflow_results)} workflow results from multi-workflow coordinator"
-    )
-
-    if workflow_results:
-        logger.info(f"Workflow result keys: {list(workflow_results.keys())}")
-        for wf_name, wf_data in workflow_results.items():
-            logger.info(
-                f"  {wf_name}: retrieved={len(wf_data.get('retrieved_results', []))}, mcp={bool(wf_data.get('mcp_search_results'))}"
-            )
-    else:
-        logger.warning("No workflow results found in state!")
-        logger.info(f"State keys: {list(state.keys())}")
-        logger.info(
-            f"agent_results keys: {list(agent_results.keys()) if agent_results else 'None'}"
-        )
-
-    # Initialize structured output
-    aggregated_output = {
-        "final_answer": "",
-        "sources": [],  # Must be a list to match state schema
-        "metadata": {
-            "total_workflows": len(workflow_results),
-            "total_tools_used": 0,
-            "processing_time": state.get("processing_time", 0.0),
-            "aggregation_method": "cross_workflow_deduplication",
-            "timestamp": datetime.utcnow().isoformat(),
-        },
-    }
-
-    # Store workflow details separately (not in sources)
-    workflow_details = {}
-
-    all_sources = []
-    tool_count = 0
-
-    # Process each workflow's results
-    for workflow_name, workflow_data in workflow_results.items():
-        # Handle retrieval results (document-based)
-        retrieved_results = workflow_data.get("retrieved_results", [])
-        for result in retrieved_results:
-            source = {
-                "document_id": result.get("document_id", f"doc_{workflow_name}"),
-                "filename": result.get("filename", f"document_{workflow_name}.pdf"),
-                "content_type": result.get("content_type", "application/pdf"),
-                "chunk_text": result.get("content", f"Content from {workflow_name}"),
-                "similarity_score": result.get("similarity_score", 0.8),
-                "metadata": {
-                    "tool_name": "vector_search",
-                    "workflow_origin": workflow_name,
-                    "source_type": "retrieval",
-                },
-            }
-            all_sources.append(source)
-            tool_count += 1
+        if "web_search" in mcp_results and isinstance(mcp_results["web_search"], list):
+            for result in mcp_results["web_search"]:
+                if isinstance(result, dict):
+                    tool_name = result.get("tool", "search")
+                    # Use actual URL for web search results
+                    result_url = result.get("url", result.get("link"))
+                    source = {
+                        "document_id": f"{tool_name}_{workflow_name}_{hash(str(result)) % 1000}",
+                        "filename": result_url
+                        or f"{tool_name}_result_{workflow_name}.txt",
+                        "content_type": "text/html",
+                        "chunk_text": result.get(
+                            "snippet", result.get("title", result.get("result", ""))
+                        ),
+                        "similarity_score": result.get("relevance_score", 0.5),
+                        "metadata": {
+                            "tool_name": tool_name,
+                            "workflow_origin": workflow_name,
+                            "source_type": "web_search",
+                            "category": "web_search",
+                            "url": result_url,
+                            "ranking_score": 0.0,  # Will be calculated
+                        },
+                    }
+                    all_sources.append(source)
+                    tool_count += 1
 
         # Handle MCP research results (tool-based, mapped to document format)
         mcp_results = workflow_data.get("mcp_search_results", {})
@@ -1906,9 +1746,19 @@ async def aggregate_multi_workflow_results(
                         if category != "academic_papers"
                         else "search_semantic"
                     )
+
+                    # Construct URL for academic papers
+                    paper_url = None
+                    if category == "arxiv_papers" and item.get("id"):
+                        paper_url = f"https://arxiv.org/abs/{item['id']}"
+                    elif category == "biorxiv_papers" and item.get("id"):
+                        paper_url = f"https://www.biorxiv.org/content/{item['id']}"
+                    elif item.get("url"):
+                        paper_url = item["url"]
+
                     source = {
                         "document_id": f"paper_{workflow_name}_{hash(item.get('title', 'unknown')) % 1000}",
-                        "filename": f"paper_{workflow_name}.pdf",
+                        "filename": paper_url or f"paper_{workflow_name}.pdf",
                         "content_type": "application/pdf",
                         "chunk_text": f"{item.get('title', 'Paper')} - {item.get('authors', ['Unknown'])[0] if item.get('authors') else 'Unknown'}",
                         "similarity_score": item.get("relevance_score", 0.8),
@@ -1917,6 +1767,7 @@ async def aggregate_multi_workflow_results(
                             "authors": item.get("authors", []),
                             "workflow_origin": workflow_name,
                             "source_type": "academic_paper",
+                            "paper_url": paper_url,
                         },
                     }
                     all_sources.append(source)
@@ -1953,30 +1804,36 @@ async def aggregate_multi_workflow_results(
             "workflow_summary": f"Completed {workflow_name} with {workflow_sources_count} results",
         }
 
-    # Deduplication across all workflows
-    deduplicated_sources = deduplicate_cross_workflows(all_sources)
+    # Step 2: RANKING - Order sources by relevance
+    logger.info("📊 Step 2: Ranking sources by relevance and quality")
+    ranked_sources = await rank_sources_by_relevance(all_sources, query)
 
-    # Generate final synthesized answer
-    final_answer = await generate_synthesized_answer(state, deduplicated_sources)
-    logger.info(f"Generated final answer: {final_answer[:100]}...")
+    # Step 3: DEDUPLICATION - Remove redundant information
+    logger.info("🔄 Step 3: Deduplicating redundant information")
+    deduplicated_sources = await deduplicate_sources_intelligently(ranked_sources)
 
-    # Update metadata
-    aggregated_output["sources"] = deduplicated_sources
-    aggregated_output["metadata"]["total_tools_used"] = tool_count
-    aggregated_output["final_answer"] = final_answer
-    logger.info(f"Setting final_answer in aggregated_output: {bool(final_answer)}")
-
-    # Add workflow details to agent_results (preserves state schema compatibility)
-    aggregated_output["agent_results"] = {
-        "workflow_details": workflow_details,
-        "deduplicated_sources": deduplicated_sources,
-    }
+    processing_time = (datetime.utcnow() - start_time).total_seconds()
 
     logger.info(
-        f"Multi-workflow aggregation complete: {len(workflow_results)} workflows, {tool_count} tools, {len(deduplicated_sources)} deduplicated sources"
+        f"✅ Results Aggregator Agent completed: {len(ranked_sources)} ranked, "
+        f"{len(deduplicated_sources)} deduplicated in {processing_time:.2f}s"
     )
 
-    return aggregated_output
+    # Return results for LangGraph to merge into state
+    return {
+        "aggregation_results": {
+            "ranked_sources": ranked_sources,
+            "deduplicated_sources": deduplicated_sources,
+            "aggregation_metadata": {
+                "total_workflows": len(workflow_results),
+                "total_raw_sources": len(all_sources),
+                "total_ranked_sources": len(ranked_sources),
+                "total_deduplicated_sources": len(deduplicated_sources),
+                "processing_time": processing_time,
+            },
+        },
+        "processing_time": processing_time,
+    }
 
 
 def generate_source_link(tool_name: str, result_data: Dict[str, Any]) -> Optional[str]:
