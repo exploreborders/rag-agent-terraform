@@ -3,16 +3,16 @@
 
 import asyncio
 import logging
-import sys
 import os
+import sys
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from app.config import settings
+from app.mcp_client import mcp_client
 from app.multi_agent_graph import create_docker_multi_agent_graph, query_processor_agent
 from app.multi_agent_state import create_initial_state
-from app.mcp_client import mcp_client
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -4,19 +4,15 @@ Provides common mocks, test data, and utilities used across all test modules.
 """
 
 import asyncio
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from typing import Any, Dict, List
+from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np
 import pytest
 
 from app.models import (
-    DocumentResponse,
-    HealthStatus,
     OllamaEmbedResponse,
     OllamaGenerateResponse,
-    QueryRequest,
     QueryResponse,
 )
 
@@ -243,6 +239,31 @@ def temp_test_file(tmp_path, sample_document_content):
 
 
 @pytest.fixture
+def temp_text_content():
+    """Content for temporary text file."""
+    return """Machine Learning Fundamentals
+
+Machine learning is a subset of artificial intelligence that enables computers to learn and make decisions from data without being explicitly programmed.
+
+Key concepts include:
+- Supervised learning
+- Unsupervised learning
+- Reinforcement learning
+- Neural networks
+- Deep learning
+
+Applications span image recognition, natural language processing, recommendation systems, and autonomous vehicles."""
+
+
+@pytest.fixture
+def temp_text_file(tmp_path, temp_text_content):
+    """Create a temporary text file for testing."""
+    test_file = tmp_path / "test_ml_fundamentals.txt"
+    test_file.write_text(temp_text_content)
+    return str(test_file)
+
+
+@pytest.fixture
 def mock_file_upload():
     """Mock file upload for testing."""
     file_mock = Mock()
@@ -275,20 +296,20 @@ def assert_dict_contains_subset(subset: Dict[str, Any], superset: Dict[str, Any]
     """Assert that all key-value pairs in subset are present in superset."""
     for key, value in subset.items():
         assert key in superset, f"Key '{key}' not found in superset"
-        assert (
-            superset[key] == value
-        ), f"Value mismatch for key '{key}': expected {value}, got {superset[key]}"
+        assert superset[key] == value, (
+            f"Value mismatch for key '{key}': expected {value}, got {superset[key]}"
+        )
 
 
 def assert_embedding_valid(embedding: List[float], expected_dim: int = 768):
     """Assert that an embedding is valid."""
     assert isinstance(embedding, list), "Embedding must be a list"
-    assert (
-        len(embedding) == expected_dim
-    ), f"Embedding must have {expected_dim} dimensions"
-    assert all(
-        isinstance(x, (int, float)) for x in embedding
-    ), "All embedding values must be numeric"
+    assert len(embedding) == expected_dim, (
+        f"Embedding must have {expected_dim} dimensions"
+    )
+    assert all(isinstance(x, (int, float)) for x in embedding), (
+        "All embedding values must be numeric"
+    )
 
 
 # Test Data Generators

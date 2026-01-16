@@ -5,23 +5,23 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Query
-from fastapi.responses import Response
+from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from prometheus_client import Counter, Histogram, Gauge, CollectorRegistry
+from fastapi.responses import Response
+from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 from starlette_exporter import PrometheusMiddleware, handle_metrics
 
 from app.config import settings
 from app.models import (
-    HealthStatus,
-    QueryRequest,
-    RootResponse,
-    DocumentResponse,
-    DocumentListResponse,
-    DeleteResponse,
     AgentQueryResponse,
     AgentStatusResponse,
+    DeleteResponse,
+    DocumentListResponse,
+    DocumentResponse,
+    HealthStatus,
     MCPToolsTestResponse,
+    QueryRequest,
+    RootResponse,
 )
 from app.rag_agent import RAGAgent
 
@@ -75,16 +75,16 @@ async def lifespan(app: FastAPI):
         # Don't initialize during startup - do it lazily on first request
         logger.info("RAG Agent created (will initialize on first use)")
 
-        # Initialize Multi-Agent System (Phase 1)
+        # Initialize Multi-Agent System
         logger.info("Initializing Multi-Agent System...")
         try:
             # Import multi-agent modules
-            from app.multi_agent_graph import create_docker_multi_agent_graph
-            from app.graph_persistence import setup_graph_persistence
+            from app.graph_persistence import persistence_manager
             from app.mcp_client import mcp_client
+            from app.multi_agent_graph import create_docker_multi_agent_graph
 
             logger.info("Setting up graph persistence...")
-            checkpointer = await setup_graph_persistence(settings.database_url)
+            checkpointer = await persistence_manager.initialize()
 
             logger.info("Connecting MCP client...")
             await mcp_client.connect()
@@ -113,7 +113,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    logger.info("Shutting down RAG Agent application...")
+    logger.info("RAG Agent application shutting down")
 
 
 # Initialize FastAPI app
@@ -397,7 +397,7 @@ async def delete_document(document_id: str):
     description="Query the system using the multi-agent architecture with LangGraph orchestration and MCP tools.",
 )
 async def multi_agent_query(request: QueryRequest):
-    """Multi-Agenten-Abfrage mit LangGraph (Phase 1)."""
+    """Multi-Agent query with LangGraph orchestration."""
     try:
         if multi_agent_graph is None:
             # Multi-agent system required
@@ -411,7 +411,7 @@ async def multi_agent_query(request: QueryRequest):
 
         initial_state = create_initial_state(
             query=request.query,
-            user_id="api_user",  # Simplified for Phase 1
+            user_id="api_user",
             user_level="standard",
         )
 
@@ -421,8 +421,45 @@ async def multi_agent_query(request: QueryRequest):
 
         # Execute multi-agent graph
         logger.info(f"Executing multi-agent query: {request.query}")
-        # Provide required configuration for the checkpointer
-        config = {"configurable": {"thread_id": "api_query", "thread_ts": "latest"}}
+
+        # CRITICAL FIX: Generate unique thread ID to prevent state contamination between queries
+        import uuid
+        from datetime import datetime
+
+        thread_id = f"query_{datetime.utcnow().isoformat()}_{uuid.uuid4().hex[:8]}"
+        config = {"configurable": {"thread_id": thread_id, "thread_ts": "latest"}}
+
+        # VALIDATION: Ensure clean initial state (no contamination from previous queries)
+        expected_initial_keys = {
+            "query",
+            "sanitized_query",
+            "agent_tasks",
+            "agent_results",
+            "intent_classification",
+            "retrieved_results",
+            "retrieval_confidence",
+            "allowed_doc_ids",
+            "mcp_search_results",
+        }
+
+        actual_keys = set(initial_state.keys())
+        unexpected_keys = actual_keys - expected_initial_keys
+
+        if unexpected_keys:
+            logger.warning(
+                f"State contamination detected! Unexpected keys: {unexpected_keys}"
+            )
+            logger.info("Resetting to clean initial state")
+            # Recreate clean initial state
+            initial_state = create_initial_state(
+                query=request.query,
+                user_id="api_user",
+                user_level="standard",
+            )
+            if request.document_ids:
+                initial_state["allowed_doc_ids"] = request.document_ids
+
+        logger.info(f"Using thread_id: {thread_id} for query isolation")
         result = await multi_agent_graph.ainvoke(initial_state, config=config)
 
         # Handle multi-path results
@@ -457,7 +494,7 @@ async def multi_agent_query(request: QueryRequest):
             response_data["workflow_sources"] = workflow_details
             response_data["metadata"] = result.get("metadata", {})
 
-        # Phase 1 specific fields
+        # Multi-agent specific fields
         response_data["agent_metrics"] = result.get("agent_metrics", {})
         response_data["mcp_results"] = {
             "search": result.get("mcp_search_results"),
@@ -556,9 +593,10 @@ async def agent_system_status():
 )
 async def stream_multi_agent_query(request: QueryRequest):
     """Streaming multi-agent query with real-time updates via SSE."""
-    from fastapi.responses import StreamingResponse
-    import json
     import asyncio
+    import json
+
+    from fastapi.responses import StreamingResponse
 
     async def generate_events():
         """Generate Server-Sent Events for the multi-agent query processing."""
@@ -1546,15 +1584,7 @@ async def test_mcp_tools(
         }
 
 
-# Multi-agent initialization moved to lifespan context manager
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Application shutdown event."""
-    logger.info("RAG Agent application shutting down")
-
-
+# Shutdown logic moved to lifespan context manager
 if __name__ == "__main__":
     import uvicorn
 

@@ -3,9 +3,7 @@ Unit tests for RAGAgent class.
 Covers core business logic, document processing, querying, and system management.
 """
 
-import asyncio
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

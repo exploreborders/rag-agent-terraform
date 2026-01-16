@@ -1,4 +1,4 @@
-"""Simple persistence for LangGraph checkpoints (Phase 1)."""
+"""Persistence for LangGraph checkpoints."""
 
 import logging
 from typing import Optional
@@ -17,22 +17,19 @@ class GraphPersistenceError(Exception):
 
 
 async def setup_graph_persistence(db_url: Optional[str] = None) -> MemorySaver:
-    """Initialisiere einfachen In-Memory Checkpointer für LangGraph (Phase 1).
+    """Initialize in-memory persistence for LangGraph checkpoints.
 
     Args:
-        db_url: Datenbank-URL (optional, wird für Phase 1 ignoriert)
+        db_url: Database URL (optional, currently uses in-memory storage)
 
     Returns:
-        Konfigurierter MemorySaver
-
-    Note:
-        Phase 1 verwendet In-Memory Persistence. PostgreSQL wird in späteren Phasen hinzugefügt.
+        Configured MemorySaver
     """
     try:
-        # Verwende einfachen Memory Checkpointer für Phase 1
+        # Use in-memory persistence for LangGraph checkpoints
         checkpointer = MemorySaver()
 
-        logger.info("LangGraph Memory persistence initialized successfully (Phase 1)")
+        logger.info("LangGraph Memory persistence initialized successfully")
         return checkpointer
 
     except Exception as e:
@@ -54,7 +51,7 @@ async def get_checkpoint_stats(checkpointer: MemorySaver) -> dict:
         return {
             "status": "operational",
             "checkpointer_type": "MemorySaver",
-            "note": "Phase 1: In-memory persistence",
+            "note": "In-memory persistence for LangGraph checkpoints",
         }
     except Exception as e:
         logger.warning(f"Failed to get checkpoint stats: {e}")
@@ -74,8 +71,8 @@ async def cleanup_old_checkpoints(
         Anzahl der gelöschten Checkpoints
     """
     try:
-        # MemorySaver hat keine persistenten Checkpoints zum Aufräumen
-        logger.info(f"Memory checkpoint cleanup requested (no-op for Phase 1)")
+        # MemorySaver has no persistent checkpoints to clean up
+        logger.info("Memory checkpoint cleanup requested (no-op for in-memory storage)")
         return 0
     except Exception as e:
         logger.error(f"Failed to cleanup checkpoints: {e}")

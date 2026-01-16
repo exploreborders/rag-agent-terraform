@@ -5,15 +5,11 @@ Uses testcontainers to spin up PostgreSQL and Redis containers for testing.
 
 import asyncio
 import os
-import tempfile
 from pathlib import Path
 from typing import Any, AsyncGenerator, Dict
 
 import pytest
-from testcontainers.postgres import PostgresContainer
-from testcontainers.redis import RedisContainer
 
-from app.config import Settings
 from app.ollama_client import OllamaClient
 from app.rag_agent import RAGAgent
 from app.redis_memory import AgentMemory
@@ -41,7 +37,7 @@ def postgres_container() -> Dict[str, Any]:
         sock.close()
         if result != 0:
             pytest.skip("PostgreSQL not available on localhost:5432")
-    except:
+    except Exception:
         pytest.skip("PostgreSQL not available on localhost:5432")
 
     # Use the existing container that's already running
@@ -70,7 +66,7 @@ def redis_container() -> Dict[str, Any]:
         sock.close()
         if result != 0:
             pytest.skip("Redis not available on localhost:6379")
-    except:
+    except Exception:
         pytest.skip("Redis not available on localhost:6379")
 
     # Use the existing container that's already running

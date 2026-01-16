@@ -5,14 +5,14 @@ import json
 import logging
 import re
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
 
-from app.multi_agent_state import DockerMultiAgentRAGState
+from app.config import settings
 from app.mcp_client import DockerMCPClient
 from app.models import OllamaGenerateRequest
-from app.config import settings
+from app.multi_agent_state import DockerMultiAgentRAGState
 
 logger = logging.getLogger(__name__)
 
@@ -293,8 +293,8 @@ async def extract_query_parameters(
     query: str, intent: Dict[str, Any]
 ) -> Dict[str, Any]:
     """Extract specific parameters from query to optimize agent execution."""
-    from app.ollama_client import OllamaClient
     from app.config import settings
+    from app.ollama_client import OllamaClient
 
     parameters = {
         "keywords": [],
@@ -742,9 +742,7 @@ async def multi_workflow_coordinator(
 ) -> Dict[str, Any]:
     """Coordinate parallel execution of multiple workflows with error handling."""
     agent_tasks = state.get("agent_tasks", {})
-    logger.info(
-        f"🎯 MULTI-WORKFLOW COORDINATOR ACTIVATED with {len(agent_tasks)} tasks"
-    )
+    logger.info(f"🎯 MULTI-WORKFLOW COORDINATOR ACTIVATED with {len(agent_tasks)} tasks")
 
     # Extract workflow tasks
     workflow_tasks = [task for task in agent_tasks.keys() if "_workflow_" in task]
@@ -1219,8 +1217,8 @@ async def retrieval_agent(
     This agent integrates with the existing RAG system but only returns safe metadata
     (no full content or LLM-generated answers) to maintain security boundaries.
     """
-    from app.vector_store import VectorStore
     from app.ollama_client import OllamaClient
+    from app.vector_store import VectorStore
 
     start_time = datetime.utcnow()
     sanitized_query = state.get("sanitized_query", "")
@@ -1905,8 +1903,8 @@ async def rank_sources_by_relevance(
     sources: List[Dict[str, Any]], query: str
 ) -> List[Dict[str, Any]]:
     """Rank sources by relevance to the query using multiple criteria."""
-    from app.ollama_client import OllamaClient
     from app.config import settings
+    from app.ollama_client import OllamaClient
 
     if not sources:
         return sources
@@ -2049,8 +2047,8 @@ async def generate_synthesized_answer(
 ) -> str:
     """Generate a synthesized answer from multiple workflow results."""
     try:
-        from app.ollama_client import OllamaClient
         from app.config import settings
+        from app.ollama_client import OllamaClient
 
         # Prepare context from deduplicated sources
         context_parts = []
@@ -2194,8 +2192,8 @@ Create a well-structured response that directly addresses the query using the pr
 """
 
     try:
-        from app.ollama_client import OllamaClient
         from app.config import settings
+        from app.ollama_client import OllamaClient
 
         ollama_client = OllamaClient()
         request = OllamaGenerateRequest(
@@ -2459,8 +2457,8 @@ Return a JSON object with validation scores and feedback:
 
     try:
         # Use semantic evaluation with local LLM
-        from app.ollama_client import OllamaClient
         from app.config import settings
+        from app.ollama_client import OllamaClient
 
         # Create semantic evaluation prompt
         source_info_text = "\n".join(source_context)

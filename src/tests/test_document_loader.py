@@ -270,10 +270,3 @@ class TestDocumentLoader:
 
         assert checksum1 == checksum2
         assert len(checksum1) == 64  # SHA-256 hex length
-
-    @pytest.mark.skip(reason="Mocking pathlib.Path.stat is complex with Python 3.11+")
-    def test_cleanup_old_files(self, document_loader, temp_dirs):
-        """Test cleanup of old files."""
-        # This test is skipped due to difficulties mocking pathlib.Path.stat
-        # The cleanup functionality works in practice
-        pass

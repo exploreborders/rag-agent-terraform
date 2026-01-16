@@ -2,214 +2,153 @@
 
 ## 🚀 Project Overview
 
-This is a Terraform-managed local infrastructure for an agentic RAG (Retrieval-Augmented Generation) system combining LangChain orchestration with LlamaIndex document indexing. The system processes PDF, text, and image documents using local Ollama AI models, PostgreSQL with pgvector for embeddings, and Redis for caching.
-
-The project consists of:
-- **Backend**: FastAPI application with document processing and RAG capabilities
-- **Infrastructure**: Terraform-managed Docker containers and networking
-- **Testing**: Comprehensive pytest suite with unit and integration tests
-- **Code Quality**: Black, isort, flake8, and mypy for consistent code formatting and type safety
-
-**Note**: No Cursor rules (.cursor/rules/) or Copilot instructions (.github/copilot-instructions.md) were found in this repository.
+**Multi-agent RAG system** with LangGraph orchestration, FastAPI backend, PostgreSQL with pgvector, and local Ollama models.
 
 ## 🛠️ Development Commands
 
-### Environment Setup
+### Quick Start
 ```bash
-# Complete development environment setup
-make workflow-dev
-
-# Or manually:
-make setup        # Set up Python virtual environment
-make install      # Install dependencies
-make infra-init   # Initialize Terraform
-make deploy       # Deploy infrastructure
-make dev          # Start development server
+make setup    # Setup Python environment
+make build    # Build Docker images
+make up       # Deploy services with Terraform
+make dev      # Start development server
 ```
 
-### Infrastructure Management
+### Testing & Quality
 ```bash
-# Recommended: Manual Docker deployment (faster, more reliable)
-make deploy              # Deploy all services with Docker
-docker ps                # Check running containers
+make test     # Run all tests with coverage
+make lint     # Format code (black, isort, flake8, mypy)
 
-# Alternative: Terraform deployment (may timeout on image builds)
-make infra-init          # Initialize Terraform
-make infra-apply         # Apply infrastructure (use with caution)
-
-# Destroy infrastructure
-make destroy            # Stop all services and clean up
-
-# Check infrastructure health
-docker ps               # Verify all containers are running
-curl http://localhost:8000/health  # Test application health
-```
-
-### Application Development
-```bash
-# Activate virtual environment
-source venv/bin/activate
-
-# Install dependencies
-make install
-# or
-pip install -e .[dev]
-
-# Run FastAPI application with hot reload
-make dev
-# or
-cd src && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Access API documentation
-open http://localhost:8000/docs
-
-# Run frontend development server (if available)
-cd frontend && npm run dev
-```
-
-### Frontend Development
-```bash
-# Install frontend dependencies
-cd frontend && npm install
-
-# Start development server
-cd frontend && npm start
-
-# Run frontend tests
-cd frontend && npm test
-
-# Build for production
-cd frontend && npm run build
-
-# Run tests in CI mode with coverage
-cd frontend && npm run test:ci
-```
-
-### Testing Commands
-```bash
-# Run all tests (unit + integration with coverage)
-make test
-# or
-cd src && python -m pytest tests/ -v --cov=app --cov-report=html
-
-# Run unit tests only (excludes integration tests)
-make test-unit
-# or
-cd src && python -m pytest tests/ -v -m "not integration"
-
-# Run integration tests only (requires infrastructure)
-make test-integration
-# or
-cd src && python -m pytest tests/ -v -m "integration"
-
-# Run quick integration test (verify infrastructure)
-make test-integration-quick
-# or
-cd src && python -m pytest tests/integration/test_simple_integration.py -v
-
-# Run specific test file
-cd src && python -m pytest tests/test_api.py -v
-
-# Run single test function (most common for development)
+# Single test execution
 cd src && python -m pytest tests/test_api.py::TestAPIIntegration::test_health_endpoint -v
-
-# Run single test class
-cd src && python -m pytest tests/test_api.py::TestAPIIntegration -v
-
-# Run tests by marker
-cd src && python -m pytest tests/ -v -m "asyncio"  # async tests only
-cd src && python -m pytest tests/ -v -m "slow"    # slow tests only
-
-# Run tests with coverage report
-make test-cov
-# or
-cd src && python -m pytest tests/ -m "not integration" --cov=app --cov-report=term-missing --cov-report=html
-
-# Run all tests with coverage (requires infrastructure)
-make test-cov-all
-# or
-cd src && python -m pytest tests/ --cov=app --cov-report=term-missing --cov-report=html
-
-# Debug failing test
-cd src && python -m pytest tests/test_api.py::TestAPIIntegration::test_health_endpoint -v -s --pdb
-
-# Run tests in parallel (requires pytest-xdist)
-pip install pytest-xdist
-cd src && python -m pytest tests/ -n auto
+cd src && python -m pytest tests/test_vector_store.py::TestVectorStore::test_similarity_search -v
+cd src && python -m pytest tests/test_multi_agent.py -k "test_agent_routing" -v
 ```
 
-### Monitoring Commands
-```bash
-# Test monitoring setup
-make monitoring-test
+### Code Quality
+- **Black**: 88 character line length, Python 3.11+
+- **Flake8**: 100 chars (E501 ignored), strict mode
+- **isort**: Black-compatible, 88 chars, multi-line output 3
+- **MyPy**: Strict type checking (disallow_untyped_defs, no_implicit_optional)
 
-# Check monitoring container status
-make monitoring-status
+## 📝 Code Style Guidelines
 
-# View monitoring logs
-make monitoring-logs
+### Import Organization
+```python
+# Standard library (alphabetical)
+import asyncio
+import json
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Any
 
-# Complete monitoring setup
-make workflow-monitoring
+# Third-party (alphabetical)
+import httpx
+from fastapi import FastAPI, HTTPException
+from langchain.chains import RetrievalQA
+from langgraph.graph import StateGraph
+import psycopg2
+import redis
+import structlog
 
-# Access monitoring interfaces
-# Grafana: http://localhost:3000 (admin/admin)
-# Prometheus: http://localhost:9090
-# Application Metrics: http://localhost:8000/metrics
+# Local (module hierarchy)
+from app.config import settings
+from app.models import Document, Query
+from app.vector_store import VectorStore
 ```
 
-### Code Quality & Linting
-```bash
-# Format Python code with black (88 character line length)
-cd src && black .
+### Naming Conventions
+- **Classes**: `PascalCase` (e.g., `DockerMultiAgentRAGState`)
+- **Functions/Methods**: `snake_case` (e.g., `process_document`, `get_embedding`)
+- **Variables**: `snake_case` (e.g., `agent_tasks`, `workflow_results`)
+- **Constants**: `UPPER_SNAKE_CASE` (e.g., `MAX_UPLOAD_SIZE`)
+- **Private members**: `_snake_case` (e.g., `_ensure_connection`)
 
-# Sort imports with isort
-cd src && isort .
+### Type Hints
+```python
+def process_document(document_path: Path, chunk_size: int = 1000, overlap: int = 200) -> List[Dict[str, Any]]:
+    """Process a document and return chunks with metadata."""
 
-# Lint Python code with flake8 (max 100 chars, E501 ignored)
-cd src && flake8 .
-
-# Type checking with mypy
-cd src && mypy .
-
-# Run all code quality checks
-make lint
-# or
-cd src && black . && isort . && flake8 . && mypy .
-
-# Check code quality without making changes
-make check
-# or
-cd src && black --check . && isort --check-only . && flake8 . && mypy .
-
-# Run pre-commit hooks
-make pre-commit
-# or
-cd src && pre-commit run --all-files
+async def similarity_search(query_vector: List[float], top_k: int = 5, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    """Perform vector similarity search with optional filters."""
 ```
 
-#### Code Formatting Configuration
-- **Black**: 88 character line length, Python 3.11+ syntax
-- **Flake8**: 100 character line length (E501 error ignored), strict mode
-- **isort**: Black-compatible import sorting, 88 chars, multi-line output 3
-- **MyPy**: Strict type checking enabled (disallow_untyped_defs, no_implicit_optional, etc.)
+### Error Handling
+```python
+import logging
+from fastapi import HTTPException
+from app.exceptions import DocumentProcessingError
 
-#### Dependency Injection Patterns
+logger = logging.getLogger(__name__)
+
+def load_document(file_path: Path) -> Document:
+    try:
+        if not file_path.exists():
+            raise FileNotFoundError(f"Document not found: {file_path}")
+        content = file_path.read_text(encoding='utf-8')
+        if not content.strip():
+            raise ValueError("Document is empty")
+        return Document(content=content, path=file_path)
+    except FileNotFoundError as e:
+        logger.error(f"Document loading failed: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error loading document: {e}")
+        raise DocumentProcessingError(f"Failed to load document: {str(e)}")
+```
+
+### Custom Exceptions
+```python
+class RAGException(Exception):
+    """Base exception for RAG system errors."""
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message)
+        self.details = details or {}
+
+class DocumentProcessingError(RAGException):
+    """Raised when document processing fails."""
+    pass
+```
+
+### Async/Await Patterns
+```python
+class VectorStore:
+    async def batch_embed(self, texts: List[str]) -> List[np.ndarray]:
+        """Generate embeddings for multiple texts concurrently."""
+        tasks = [self._embed_single(text) for text in texts]
+        return await asyncio.gather(*tasks)
+
+@router.post("/agents/query")
+async def multi_agent_query(request: QueryRequest):
+    """Multi-Agent query with LangGraph."""
+    try:
+        initial_state = create_initial_state(query=request.query, user_id="api_user", user_level="standard")
+        config = {"configurable": {"thread_id": f"query_{datetime.utcnow().isoformat()}_{uuid.uuid4().hex[:8]}", "thread_ts": "latest"}}
+        result = await multi_agent_graph.ainvoke(initial_state, config=config)
+        return AgentQueryResponse(
+            query=request.query,
+            answer=result.get("final_answer", "No response generated"),
+            sources=result.get("sources", []),
+            confidence_score=result.get("confidence_score", 0.0),
+            processing_time=result.get("processing_time", 0.0),
+            total_sources=len(result.get("sources", [])),
+        )
+    except Exception as e:
+        logger.error(f"Multi-agent query failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Multi-agent query failed: {str(e)}")
+```
+
+### Dependency Injection Patterns
 ```python
 from fastapi import Depends
-from app.vector_store import VectorStore
-from app.ollama_client import OllamaClient
 
-# Dependency functions in dependencies.py
 async def get_vector_store() -> VectorStore:
-    """Get configured vector store instance."""
     return VectorStore(settings.database_url)
 
 async def get_ollama_client() -> OllamaClient:
-    """Get configured Ollama client instance."""
     return OllamaClient(base_url=settings.ollama_base_url)
 
-# Usage in routers
 @router.post("/query")
 async def query_rag(
     request: QueryRequest,
@@ -220,349 +159,6 @@ async def query_rag(
     # Implementation uses injected dependencies
 ```
 
-### Document Processing & Data Management
-```bash
-# Ingest sample documents
-cd src && python scripts/ingest_documents.py --input data/documents/ --recursive
-
-# Setup vector database
-cd src && python scripts/setup_vector_db.py
-
-# Evaluate RAG performance
-cd src && python scripts/evaluate_rag.py --test-set data/test_queries.json
-
-# Seed database with sample data
-./scripts/seed_db.sh
-```
-
-## 📝 Code Style Guidelines
-
-### Python Code Style
-
-#### Import Organization
-```python
-# Standard library imports (alphabetically sorted)
-import asyncio
-import json
-import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Any
-
-# Third-party imports (alphabetically sorted)
-import httpx
-from fastapi import FastAPI, HTTPException
-from langchain.chains import RetrievalQA
-from llama_index import VectorStoreIndex
-import psycopg2
-import redis
-import structlog
-
-# Local imports (organized by module hierarchy)
-from app.config import Settings
-from app.models import Document, Query
-from app.vector_store import VectorStore
-```
-
-#### Naming Conventions
-- **Classes**: `PascalCase` (e.g., `RAGAgent`, `DocumentLoader`)
-- **Functions/Methods**: `snake_case` (e.g., `process_document`, `get_embedding`)
-- **Variables**: `snake_case` (e.g., `document_text`, `vector_embeddings`)
-- **Constants**: `UPPER_SNAKE_CASE` (e.g., `MAX_CHUNK_SIZE`, `DEFAULT_MODEL`)
-- **Private members**: `_snake_case` (e.g., `_ollama_client`, `_vector_store`)
-
-#### Type Hints
-```python
-from typing import Dict, List, Optional, Union, Any
-import numpy as np
-
-def process_document(
-    document_path: Path,
-    chunk_size: int = 1000,
-    overlap: int = 200
-) -> List[Dict[str, Any]]:
-    """Process a document and return chunks with metadata."""
-
-def get_embedding(text: str) -> Optional[np.ndarray]:
-    """Generate embeddings for text using Ollama."""
-
-async def query_rag(
-    query: str,
-    top_k: int = 5,
-    filters: Optional[Dict[str, Any]] = None
-) -> Dict[str, Union[str, List[Dict[str, Any]]]]:
-    """Query the RAG system with optional filtering."""
-```
-
-#### Error Handling
-```python
-import logging
-from fastapi import HTTPException
-from app.exceptions import DocumentProcessingError, VectorStoreError
-
-logger = logging.getLogger(__name__)
-
-def load_document(file_path: Path) -> Document:
-    """Load and validate document from file path."""
-    try:
-        if not file_path.exists():
-            raise FileNotFoundError(f"Document not found: {file_path}")
-
-        # Document processing logic
-        content = file_path.read_text(encoding='utf-8')
-
-        # Validate content
-        if not content.strip():
-            raise ValueError("Document is empty")
-
-        return Document(content=content, path=file_path)
-
-    except FileNotFoundError as e:
-        logger.error(f"Document loading failed: {e}")
-        raise HTTPException(status_code=404, detail=str(e))
-    except UnicodeDecodeError as e:
-        logger.error(f"Encoding error for {file_path}: {e}")
-        raise HTTPException(status_code=400, detail="Invalid file encoding")
-    except Exception as e:
-        logger.error(f"Unexpected error loading document: {e}")
-        raise DocumentProcessingError(f"Failed to load document: {str(e)}")
-```
-
-#### Custom Exceptions
-```python
-# exceptions.py
-from typing import Optional, Dict, Any
-
-class RAGException(Exception):
-    """Base exception for RAG system errors."""
-
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
-        super().__init__(message)
-        self.details = details or {}
-
-class DocumentProcessingError(RAGException):
-    """Raised when document processing fails."""
-    pass
-
-class VectorStoreError(RAGException):
-    """Raised when vector store operations fail."""
-    pass
-
-class OllamaClientError(RAGException):
-    """Raised when Ollama client operations fail."""
-    pass
-```
-
-#### Logging with Structlog
-```python
-import logging
-import structlog
-
-# Configure structured logging in main.py
-logging.basicConfig(level=getattr(logging, settings.log_level.upper()))
-shared_processors = [
-    structlog.contextvars.merge_contextvars,
-    structlog.processors.add_log_level,
-    structlog.processors.TimeStamper(fmt="iso"),
-    structlog.processors.JSONRenderer(),
-]
-structlog.configure(
-    processors=shared_processors,
-    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-    context_class=dict,
-    logger_factory=structlog.WriteLoggerFactory(),
-    cache_logger_on_first_use=True,
-)
-
-logger = structlog.get_logger()
-
-# Usage in functions
-logger.info(
-    "Document uploaded and processed",
-    filename=file.filename,
-    file_size=file_size,
-    chunks_count=result.chunks_count,
-    processing_time=processing_time,
-)
-
-logger.error(
-    "Document processing failed",
-    filename=file.filename,
-    error=str(e),
-    exc_info=True
-)
-```
-
-#### Async/Await Patterns
-```python
-import asyncio
-from typing import List, Dict, Any
-
-class VectorStore:
-    async def batch_embed(self, texts: List[str]) -> List[np.ndarray]:
-        """Generate embeddings for multiple texts concurrently."""
-        tasks = [self._embed_single(text) for text in texts]
-        return await asyncio.gather(*tasks)
-
-    async def _embed_single(self, text: str) -> np.ndarray:
-        """Generate embedding for a single text."""
-        # Implementation with proper async handling
-        async with self.ollama_client:
-            return await self.ollama_client.embed(text)
-
-# FastAPI async endpoint patterns
-from fastapi import APIRouter, HTTPException, Depends
-from typing import Optional
-
-router = APIRouter()
-
-@router.post("/documents/upload")
-async def upload_document(
-    file: UploadFile = File(...),
-    chunk_size: int = Query(default=1000, ge=100, le=5000),
-    vector_store: VectorStore = Depends(get_vector_store),
-) -> DocumentResponse:
-    """Upload and process a document asynchronously."""
-    try:
-        # Process file asynchronously
-        content = await file.read()
-
-        # Validate and process
-        document = await process_document_async(
-            content=content,
-            filename=file.filename,
-            chunk_size=chunk_size,
-            vector_store=vector_store
-        )
-
-        return DocumentResponse(
-            id=document.id,
-            metadata=document.metadata,
-            status="processed",
-            chunks_count=document.chunks_count,
-            embeddings_count=document.embeddings_count
-        )
-
-    except ValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except ProcessingError as e:
-        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
-```
-
-#### Logging with Structlog
-```python
-import logging
-import structlog
-
-# Configure structured logging in main.py
-logging.basicConfig(level=getattr(logging, settings.log_level.upper()))
-shared_processors = [
-    structlog.contextvars.merge_contextvars,
-    structlog.processors.add_log_level,
-    structlog.processors.TimeStamper(fmt="iso"),
-    structlog.processors.JSONRenderer(),
-]
-structlog.configure(
-    processors=shared_processors,
-    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-    context_class=dict,
-    logger_factory=structlog.WriteLoggerFactory(),
-    cache_logger_on_first_use=True,
-)
-
-logger = structlog.get_logger()
-
-# Usage in functions
-logger.info(
-    "Document uploaded and processed",
-    filename=file.filename,
-    file_size=file_size,
-    chunks_count=result.chunks_count,
-    processing_time=processing_time,
-)
-
-logger.error(
-    "Document processing failed",
-    filename=file.filename,
-    error=str(e),
-    exc_info=True
-)
-```
-
-### Terraform Code Style
-
-#### Resource Naming
-```hcl
-# Use descriptive, hierarchical naming
-resource "docker_container" "rag_app" {
-  name  = "${local.project_name}-app-${local.environment}"
-  image = docker_image.app.latest
-
-  # Consistent naming pattern: {project}-{component}-{environment}
-}
-
-resource "docker_network" "rag_network" {
-  name = "${local.project_name}-network"
-}
-```
-
-#### Variable Organization
-```hcl
-# variables.tf - Input variables
-variable "environment" {
-  description = "Deployment environment (dev/staging/prod)"
-  type        = string
-  default     = "dev"
-
-  validation {
-    condition     = contains(["dev", "staging", "prod"], var.environment)
-    error_message = "Environment must be one of: dev, staging, prod"
-  }
-}
-
-variable "ollama_host" {
-  description = "Ollama server host"
-  type        = string
-  default     = "localhost"
-}
-
-# locals.tf - Computed values
-locals {
-  project_name = "rag-agent"
-  common_tags = {
-    Project     = local.project_name
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-  }
-}
-```
-
-### Docker Best Practices
-
-#### Multi-stage Builds
-```dockerfile
-# Build stage
-FROM python:3.11-slim as builder
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Production stage
-FROM python:3.11-slim
-
-RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    poppler-utils \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY src/ .
-
-EXPOSE 8000
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
 ## 🧪 Testing Guidelines
 
 ### Unit Tests Structure
@@ -570,191 +166,43 @@ CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 from fastapi.testclient import TestClient
-
 from app.main import app
-from app.models import HealthStatus
-
 
 class TestAPIIntegration:
-    """Integration tests for API endpoints using pytest markers."""
-
     @pytest.fixture
     def client(self):
-        """Test client for FastAPI application."""
-        return TestClient(app)
-
-    @pytest.mark.asyncio
-    async def test_query_endpoint_success(self, client):
-        """Test successful query processing."""
-        query_data = {"query": "What is machine learning?", "top_k": 3}
-
-        from app.models import QueryResponse, QuerySource
-
-        mock_response = QueryResponse(
-            query="What is machine learning?",
-            answer="Machine learning is a subset of AI...",
-            sources=[
-                QuerySource(
-                    document_id="doc1",
-                    filename="ml_guide.pdf",
-                    content_type="application/pdf",
-                    chunk_text="Machine learning content...",
-                    similarity_score=0.85,
-                )
-            ],
-            confidence_score=0.85,
-            processing_time=1.2,
-            total_sources=1,
-        )
-
-        with patch("app.main.rag_agent") as mock_agent:
-            async def mock_query(*args, **kwargs):
-                return mock_response
-
-            mock_agent.query = mock_query
-
-            response = client.post("/query", json=query_data)
-
-            assert response.status_code == 200
-            data = response.json()
-            assert data["query"] == "What is machine learning?"
-            assert "answer" in data
-            assert len(data["sources"]) == 1
-            assert data["sources"][0]["similarity_score"] == 0.85
-```
-
-### Integration Tests
-```python
-import pytest
-import httpx
-from fastapi.testclient import TestClient
-
-class TestAPIIntegration:
-    def test_document_upload_flow(self, client, sample_pdf):
-        """Test complete document upload and processing flow."""
-        # Upload document
-        with open(sample_pdf, "rb") as f:
-            response = client.post("/documents/upload", files={"file": f})
-
-        assert response.status_code == 200
-        doc_id = response.json()["id"]
-
-        # Query about uploaded document
-        query_response = client.post("/query", json={
-            "query": "What is the main topic?",
-            "document_ids": [doc_id]
-        })
-
-        assert query_response.status_code == 200
-        assert "answer" in query_response.json()
-```
-
-### Test Configuration and Markers
-```python
-# pytest.ini_options in pyproject.toml
-[tool.pytest.ini_options]
-minversion = "7.4"
-addopts = "-ra -q --strict-markers --strict-config"
-testpaths = ["tests"]
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-asyncio_mode = "auto"
-markers = [
-    "unit: marks tests as unit tests",
-    "integration: marks tests that require real external services",
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "database: marks tests that require database connectivity",
-    "redis: marks tests that require Redis connectivity",
-    "asyncio: marks tests as async",
-]
-```
-
-### Testing Patterns and Fixtures
-```python
-# conftest.py - Shared fixtures
-import pytest
-from fastapi.testclient import TestClient
-from app.main import app
-
-@pytest.fixture
-def client():
-    """Test client for FastAPI application."""
-    return TestClient(app)
-
-@pytest.fixture
-async def async_client():
-    """Async test client for FastAPI application."""
-    from httpx import AsyncClient
-    async with AsyncClient(app=app, base_url="http://testserver") as client:
-        yield client
-
-# Unit test with mocking
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
-from fastapi.testclient import TestClient
-
-from app.main import app
-from app.models import HealthStatus
-
-class TestAPIIntegration:
-    """Integration tests for API endpoints."""
-
-    @pytest.fixture
-    def client(self):
-        """Test client for FastAPI application."""
         return TestClient(app)
 
     @pytest.mark.asyncio
     async def test_health_endpoint_success(self, client):
-        """Test health check endpoint when system is healthy."""
-        # Mock dependencies
         with patch("app.main.rag_agent") as mock_agent:
-            # Configure mocks
             mock_agent.vector_store.health_check = AsyncMock()
             mock_agent.ollama_client.health_check = AsyncMock()
-
             response = client.get("/health")
-
             assert response.status_code == 200
-            data = response.json()
-            assert data["status"] == "healthy"
-            assert "timestamp" in data
-            assert "version" in data
-            assert "services" in data
+            assert response.json()["status"] == "healthy"
 ```
 
-### Test Coverage Requirements
-- **Unit Tests**: 90%+ coverage for business logic
-- **Integration Tests**: All API endpoints and workflows
-- **Infrastructure Tests**: Terraform validation and container health
-- **Performance Tests**: Response times and resource usage
+### Test Configuration
+- pytest with asyncio support
+- Markers: `unit`, `integration`, `slow`, `database`, `redis`, `asyncio`
+- Coverage reporting enabled
 
 ## 🔒 Security Guidelines
 
 ### Environment Variables
 ```python
-# config.py
 from pydantic import BaseSettings, validator
 import os
 
 class Settings(BaseSettings):
-    # Database
     database_url: str = "postgresql://rag_user:rag_pass@localhost:5432/rag_db"
-
-    # Redis
     redis_url: str = "redis://localhost:6379"
-
-    # Ollama
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2:latest"
     ollama_embed_model: str = "embeddinggemma:latest"
-
-    # Security
     secret_key: str
     api_key_salt: str = "your-secret-salt-here"
-
-    # File handling
     max_upload_size: int = 50 * 1024 * 1024  # 50MB
     allowed_extensions: List[str] = [".pdf", ".txt", ".jpg", ".png"]
 
@@ -783,54 +231,19 @@ class DocumentQuery(BaseModel):
     def validate_query(cls, v):
         if not v.strip():
             raise ValueError('Query cannot be empty')
-        # Prevent injection attacks
         if re.search(r'[<>]', v):
             raise ValueError('Query contains invalid characters')
         return v.strip()
-
-class DocumentUpload(BaseModel):
-    filename: str
-    content_type: str
-    size: int
-
-    @validator('content_type')
-    def validate_content_type(cls, v):
-        allowed_types = [
-            'application/pdf',
-            'text/plain',
-            'image/jpeg',
-            'image/png'
-        ]
-        if v not in allowed_types:
-            raise ValueError(f'Content type {v} not allowed')
-        return v
 ```
 
 ## 📚 Documentation Standards
 
 ### API Documentation
 ```python
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from typing import List, Dict, Any
-
-router = APIRouter()
-
 @router.post(
     "/documents/upload",
     summary="Upload and process a document",
-    description="""
-    Upload a document (PDF, text, or image) for processing and indexing.
-
-    The document will be:
-    1. Validated for type and size
-    2. Processed for text extraction
-    3. Split into chunks with overlap
-    4. Embedded using Ollama
-    5. Stored in vector database
-
-    Supported formats: PDF, TXT, JPG, PNG
-    Maximum size: 50MB
-    """,
+    description="Upload document for processing and indexing. Supported: PDF, TXT, JPG, PNG. Max 50MB.",
     response_model=DocumentResponse,
     responses={
         200: {"description": "Document processed successfully"},
@@ -838,121 +251,24 @@ router = APIRouter()
         500: {"description": "Processing failed"}
     }
 )
-async def upload_document(
-    file: UploadFile = File(...),
-    chunk_size: int = 1000,
-    overlap: int = 200
-) -> DocumentResponse:
+async def upload_document(file: UploadFile = File(...)) -> DocumentResponse:
     """Upload and process a document for the RAG system."""
-    # Implementation...
 ```
 
 ### Code Documentation
 ```python
 class RAGAgent:
-    """
-    Hybrid RAG agent combining LangChain orchestration with LlamaIndex indexing.
+    """Hybrid RAG agent with LangChain orchestration and LlamaIndex indexing."""
 
-    This agent provides conversational AI capabilities with document-grounded
-    responses using local Ollama models for both generation and embeddings.
-
-    Attributes:
-        ollama_client: Client for interacting with Ollama API
-        vector_store: PostgreSQL vector store for document embeddings
-        memory: Redis-backed conversation memory
-        langchain_agent: LangChain agent for tool orchestration
-        llama_index: LlamaIndex for document indexing and retrieval
-    """
-
-    def __init__(
-        self,
-        ollama_client: OllamaClient,
-        vector_store: VectorStore,
-        memory: RedisMemory
-    ):
-        """
-        Initialize the RAG agent with required components.
-
-        Args:
-            ollama_client: Configured Ollama client instance
-            vector_store: Vector store for document embeddings
-            memory: Memory system for conversation context
-        """
+    def __init__(self, ollama_client: OllamaClient, vector_store: VectorStore, memory: RedisMemory):
+        """Initialize RAG agent with required components."""
         self.ollama_client = ollama_client
         self.vector_store = vector_store
         self.memory = memory
         self._setup_agent()
 
-    async def query(
-        self,
-        query: str,
-        context: Optional[List[str]] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
-        """
-        Process a query using the hybrid RAG system.
-
-        Retrieves relevant documents, generates a response using the language
-        model, and maintains conversation context.
-
-        Args:
-            query: User's question or request
-            context: Optional additional context documents
-            **kwargs: Additional parameters for fine-tuning
-
-        Returns:
-            Dictionary containing:
-            - answer: Generated response
-            - sources: List of source documents
-            - confidence: Response confidence score
-            - metadata: Additional processing information
-
-        Raises:
-            RAGError: If query processing fails
-        """
-        # Implementation...
-```
-
-## 🚀 Deployment Guidelines
-
-### Local Development Setup
-```bash
-# Clone repository
-git clone <repository-url>
-cd rag-agent-terraform
-
-# Set up Python environment
-python -m venv venv
-source venv/bin/activate
-pip install -r src/requirements.txt
-
-# Start infrastructure
-cd terraform
-terraform init
-terraform apply
-
-# Verify services are running
-docker ps
-
-# Start application
-cd ../src
-python -m uvicorn app.main:app --reload
-```
-
-### Production Deployment
-```bash
-# Use production configuration
-export ENVIRONMENT=production
-export SECRET_KEY=$(openssl rand -hex 32)
-
-# Build and deploy containers
-make deploy
-
-# Run health checks
-curl http://localhost:8000/health
-
-# Monitor logs
-docker-compose logs -f app
+    async def query(self, query: str, context: Optional[List[str]] = None, **kwargs) -> Dict[str, Any]:
+        """Process query using hybrid RAG system."""
 ```
 
 ## 🔧 Development Workflow
@@ -960,180 +276,18 @@ docker-compose logs -f app
 ### Feature Development
 1. Create feature branch: `git checkout -b feature/document-chunking`
 2. Implement changes with tests
-3. Run full test suite: `make test`
+3. Run tests: `make test`
 4. Format code: `make lint`
-5. Commit with clear message: `git commit -m "feat: implement intelligent document chunking"`
-6. Create pull request with description
-
-### Code Review Checklist
-- [ ] Tests pass and coverage maintained
-- [ ] Code follows style guidelines
-- [ ] Type hints added for new functions
-- [ ] Documentation updated
-- [ ] Security considerations addressed
-- [ ] Performance implications reviewed
-- [ ] Error handling implemented
+5. Commit: `git commit -m "feat: implement intelligent document chunking"`
 
 ### Commit Message Format
 ```
 type(scope): description
-
 [optional body]
-
 [optional footer]
 ```
-
 Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
-
-## 📊 Monitoring & Logging
-
-### Structured Logging
-```python
-import logging
-import json
-from typing import Dict, Any
-
-class StructuredLogger:
-    def __init__(self, name: str):
-        self.logger = logging.getLogger(name)
-
-    def log_query(self, query: str, response: Dict[str, Any], duration: float):
-        """Log RAG query with structured data."""
-        self.logger.info(
-            "RAG query processed",
-            extra={
-                "event": "rag_query",
-                "query_length": len(query),
-                "response_length": len(response.get("answer", "")),
-                "sources_count": len(response.get("sources", [])),
-                "duration_ms": duration,
-                "timestamp": datetime.utcnow().isoformat()
-            }
-        )
-
-    def log_error(self, error: Exception, context: Dict[str, Any]):
-        """Log errors with context."""
-        self.logger.error(
-            f"Error occurred: {str(error)}",
-            extra={
-                "event": "error",
-                "error_type": type(error).__name__,
-                "context": context,
-                "timestamp": datetime.utcnow().isoformat()
-            },
-            exc_info=True
-        )
-```
-
-### Health Checks
-```python
-from fastapi import APIRouter, Depends
-from app.dependencies import get_vector_store, get_ollama_client
-
-router = APIRouter()
-
-@router.get("/health")
-async def health_check(
-    vector_store = Depends(get_vector_store),
-    ollama_client = Depends(get_ollama_client)
-):
-    """Comprehensive health check for all system components."""
-    health_status = {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "services": {}
-    }
-
-    # Check vector store
-    try:
-        await vector_store.health_check()
-        health_status["services"]["vector_store"] = "healthy"
-    except Exception as e:
-        health_status["services"]["vector_store"] = f"unhealthy: {str(e)}"
-        health_status["status"] = "degraded"
-
-    # Check Ollama
-    try:
-        await ollama_client.health_check()
-        health_status["services"]["ollama"] = "healthy"
-    except Exception as e:
-        health_status["services"]["ollama"] = f"unhealthy: {str(e)}"
-        health_status["status"] = "degraded"
-
-    # Check Redis
-    try:
-        await redis_client.ping()
-        health_status["services"]["redis"] = "healthy"
-    except Exception as e:
-        health_status["services"]["redis"] = f"unhealthy: {str(e)}"
-        health_status["status"] = "degraded"
-
-    return health_status
-```
-
-## 🎯 Performance Guidelines
-
-### Optimization Strategies
-- **Batch Processing**: Process multiple documents/embeddings concurrently
-- **Caching**: Cache frequent queries and embeddings in Redis
-- **Chunking**: Intelligent text chunking with semantic boundaries
-- **Async Operations**: Use async/await for I/O operations
-- **Resource Limits**: Implement rate limiting and resource quotas
-
-### Benchmarking
-```python
-import time
-import asyncio
-from typing import List, Dict, Any
-
-class RAGBenchmark:
-    def __init__(self, rag_agent: RAGAgent):
-        self.agent = rag_agent
-
-    async def benchmark_query(
-        self,
-        queries: List[str],
-        iterations: int = 10
-    ) -> Dict[str, Any]:
-        """Benchmark RAG query performance."""
-        results = []
-
-        for query in queries:
-            query_times = []
-
-            for _ in range(iterations):
-                start_time = time.time()
-                response = await self.agent.query(query)
-                end_time = time.time()
-
-                query_times.append(end_time - start_time)
-                results.append({
-                    "query": query,
-                    "response_length": len(response["answer"]),
-                    "sources_count": len(response["sources"]),
-                    "duration": end_time - start_time
-                })
-
-            # Calculate statistics
-            avg_time = sum(query_times) / len(query_times)
-            p95_time = sorted(query_times)[int(len(query_times) * 0.95)]
-
-            print(f"Query: {query}")
-            print(f"Average time: {avg_time:.3f}s")
-            print(f"P95 time: {p95_time:.3f}s")
-            print("---")
-
-        return {
-            "results": results,
-            "summary": {
-                "total_queries": len(results),
-                "average_response_time": sum(r["duration"] for r in results) / len(results),
-                "p95_response_time": sorted([r["duration"] for r in results])[int(len(results) * 0.95)]
-            }
-        }
-```
 
 ---
 
-This AGENTS.md file provides comprehensive guidelines for developing and maintaining the RAG Agent Terraform project. Follow these guidelines to ensure consistent, maintainable, and high-quality code across all components of the system.</content>
-<parameter name="filePath">AGENTS.md
+This AGENTS.md provides guidelines for developing the RAG Agent Terraform project.

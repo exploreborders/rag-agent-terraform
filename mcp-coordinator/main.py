@@ -5,12 +5,12 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
-from mcp.client.stdio import stdio_client, StdioServerParameters
-from mcp.client.session import ClientSession
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from mcp.client.session import ClientSession
+from mcp.client.stdio import StdioServerParameters, stdio_client
 from pydantic import BaseModel
 
 # Configure logging
@@ -244,6 +244,7 @@ class MCPCoordinator:
 
         elif tool_name == "get_current_time":
             from datetime import datetime
+
             import pytz
 
             timezone_str = parameters.get(

@@ -1,6 +1,7 @@
 """State definition for the multi-agent RAG system using LangGraph."""
 
-from typing import TypedDict, List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional, TypedDict
+
 from langchain_core.messages import BaseMessage
 
 

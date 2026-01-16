@@ -11,8 +11,8 @@ class Settings(BaseSettings):
 
     # Application Settings
     environment: str = "development"
-    debug: bool = False
-    secret_key: str = ""
+    debug: bool = True  # Development mode has debug enabled
+    secret_key: str = "your-secret-key-here-change-in-production"
     version: str = "0.1.0"
 
     # API Settings
@@ -97,7 +97,7 @@ class Settings(BaseSettings):
 
     # Vector Search
     vector_dimension: int = 768
-    similarity_threshold: float = 0.4
+    similarity_threshold: float = 0.7
     top_k_results: int = 5
     max_documents_per_query: int = 10
 

@@ -1,12 +1,11 @@
 """Integration tests for FastAPI application."""
 
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.models import HealthStatus
 
 
 class TestAPIIntegration:
