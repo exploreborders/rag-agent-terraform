@@ -27,7 +27,7 @@ This system processes documents and answers complex questions using:
 | **🔍 Intelligence** | Multi-source search • LLM intent analysis • Semantic validation • Source attribution |
 | **📄 Documents** | PDF/text/image processing • Vector similarity search • Automatic chunking • OCR support |
 | **🏗️ Infrastructure** | Terraform IaC • Docker containers • Prometheus monitoring • Grafana dashboards |
-| **🧪 Quality** | 74 unit + 11 integration tests • 100% success rate • Real-time streaming • REST API |
+| **🧪 Quality** | 176 comprehensive tests • 100% success rate • Real-time streaming • REST API |
 | **💾 Storage** | PostgreSQL + pgvector • Redis caching • Graph persistence • Ollama models |
 
 ## 🏗️ Architecture
@@ -121,7 +121,7 @@ This will:
 3. Pull required Ollama models
 4. Deploy infrastructure with Terraform
 5. Start the development server
-6. Run automated tests (100% success rate)
+6. Run automated tests (176 tests, 100% success rate)
 
 ### Manual Setup
 
@@ -187,7 +187,7 @@ rag-agent-terraform/
 │   │   ├── multi_agent_graph.py  # LangGraph orchestration
 │   │   ├── agent_communication.py # Redis messaging
 │   │   └── [10+ core modules]     # State, persistence, clients
-│   └── tests/        # 74 unit + 11 integration tests
+│   └── tests/        # 176 comprehensive tests (100% pass rate)
 ├── monitoring/       # Prometheus & Grafana configs
 ├── docs/            # Documentation
 ├── data/            # Sample documents
@@ -476,7 +476,7 @@ curl http://localhost:8000/health
 ### Code Quality
 - **Formatting**: Black + isort
 - **Linting**: flake8 + mypy
-- **Testing**: pytest (74 unit + 11 integration tests)
+- **Testing**: pytest (176 comprehensive tests)
 - **Coverage**: 100% success rate on all test suites
 
 ## 📚 Documentation

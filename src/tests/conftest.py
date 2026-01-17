@@ -10,11 +10,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import numpy as np
 import pytest
 
-from app.models import (
-    OllamaEmbedResponse,
-    OllamaGenerateResponse,
-    QueryResponse,
-)
+from app.models import OllamaEmbedResponse, OllamaGenerateResponse, QueryResponse
 
 
 # Mock Data Fixtures
@@ -296,20 +292,20 @@ def assert_dict_contains_subset(subset: Dict[str, Any], superset: Dict[str, Any]
     """Assert that all key-value pairs in subset are present in superset."""
     for key, value in subset.items():
         assert key in superset, f"Key '{key}' not found in superset"
-        assert superset[key] == value, (
-            f"Value mismatch for key '{key}': expected {value}, got {superset[key]}"
-        )
+        assert (
+            superset[key] == value
+        ), f"Value mismatch for key '{key}': expected {value}, got {superset[key]}"
 
 
 def assert_embedding_valid(embedding: List[float], expected_dim: int = 768):
     """Assert that an embedding is valid."""
     assert isinstance(embedding, list), "Embedding must be a list"
-    assert len(embedding) == expected_dim, (
-        f"Embedding must have {expected_dim} dimensions"
-    )
-    assert all(isinstance(x, (int, float)) for x in embedding), (
-        "All embedding values must be numeric"
-    )
+    assert (
+        len(embedding) == expected_dim
+    ), f"Embedding must have {expected_dim} dimensions"
+    assert all(
+        isinstance(x, (int, float)) for x in embedding
+    ), "All embedding values must be numeric"
 
 
 # Test Data Generators

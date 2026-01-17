@@ -2,8 +2,6 @@
 
 from typing import Any, Dict, List, Optional, TypedDict
 
-from langchain_core.messages import BaseMessage
-
 
 class DockerMultiAgentRAGState(TypedDict, total=False):
     """State for the Docker-based Multi-Agent RAG System.

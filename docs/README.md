@@ -26,7 +26,7 @@ make workflow-dev
 3. ✅ Pulls required Ollama models
 4. ✅ Deploys infrastructure with Terraform
 5. ✅ Starts development server
-6. ✅ Runs automated tests (100% success expected)
+6. ✅ Runs automated tests (176 tests, 100% success rate)
 
 ### Manual Setup (Alternative)
 
@@ -121,10 +121,10 @@ curl -X POST http://localhost:8000/query \
   -d '{"query": "What is machine learning?"}'
 
 # 3. Run evaluation (expect 100% success)
-make evaluate
+make test
 
 # 4. Run full test suite
-make test && cd frontend && npm run test:ci
+make test
 ```
 
 ## 📋 Detailed Setup
@@ -139,7 +139,7 @@ make workflow-dev
 make setup      # Python environment
 make deploy     # Infrastructure
 make dev        # Start server
-make evaluate   # Verify functionality
+make test       # Run tests (176 tests, 100% pass rate)
 ```
 
 ### Docker Compose Alternative
@@ -392,8 +392,7 @@ If you encounter issues:
    - Performance evaluation: `make evaluate`
 
 4. **🧪 Run Tests**:
-   - Backend tests: `make test` (58 tests, 100% pass)
-   - Frontend tests: `cd frontend && npm run test:ci` (200+ tests)
+   - Backend tests: `make test` (176 tests, 100% pass rate)
 
 5. **🔧 Customize**: Modify configurations in `.env` for your needs
 
@@ -401,7 +400,7 @@ If you encounter issues:
 
 - **🌐 Web Interface**: Complete document management and querying
 - **📊 Monitoring**: Real-time system observability
-- **🧪 Test Coverage**: 100% backend + 200+ frontend tests
+- **🧪 Test Coverage**: 176 comprehensive backend tests (100% pass rate)
 - **📚 Documentation**: Complete API, setup, and troubleshooting guides
 - **⚡ Performance**: ~3.5s response time, 800+ char comprehensive answers
 - **🏗️ Architecture**: Production-ready with 5-container infrastructure

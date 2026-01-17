@@ -1,7 +1,7 @@
 """Docker MCP Toolkit Client for LangGraph agent integration."""
 
 import asyncio
-import json
+
 import logging
 import uuid
 from datetime import datetime

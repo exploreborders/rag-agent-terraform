@@ -82,7 +82,7 @@ async def query_processor_agent(
     )
 
     # Add debug logging before returning
-    print(f"🔍🔍🔍 QUERY PROCESSOR RETURNING:")
+    print("🔍🔍🔍 QUERY PROCESSOR RETURNING:")
     print(f"  Agent tasks keys: {list(agent_tasks.keys())}")
     print(f"  Workflow tasks: {[k for k in agent_tasks.keys() if '_workflow_' in k]}")
     print(f"  Intent: {intent_classification.get('primary_intent', 'unknown')}")
@@ -129,7 +129,7 @@ def sanitize_query_for_security(query: str) -> str:
             )
 
     # Remove excessive whitespace
-    sanitized = re.sub(r"\s+", " ", sanitized).strip()
+    sanitized = re.sub(r"\\s+", " ", sanitized).strip()
 
     if sanitized != query:
         logger.warning("Query sanitized - sensitive data removed")
@@ -742,7 +742,9 @@ async def multi_workflow_coordinator(
 ) -> Dict[str, Any]:
     """Coordinate parallel execution of multiple workflows with error handling."""
     agent_tasks = state.get("agent_tasks", {})
-    logger.info(f"🎯 MULTI-WORKFLOW COORDINATOR ACTIVATED with {len(agent_tasks)} tasks")
+    logger.info(
+        f"🎯 MULTI-WORKFLOW COORDINATOR ACTIVATED with {len(agent_tasks)} tasks"
+    )
 
     # Extract workflow tasks
     workflow_tasks = [task for task in agent_tasks.keys() if "_workflow_" in task]
@@ -993,7 +995,7 @@ async def simulate_workflow_execution_simple(
             retrieved_results = [
                 {
                     "document_id": f"doc_{workflow_name}_1",
-                    "content": f"User-uploaded document about climate change in Antarctica: The Antarctic Peninsula has experienced significant warming, with average temperatures increasing by 3°C over the past 50 years. This has led to accelerated glacier retreat and ice shelf collapse.",
+                    "content": "User-uploaded document about climate change in Antarctica: The Antarctic Peninsula has experienced significant warming, with average temperatures increasing by 3°C over the past 50 years. This has led to accelerated glacier retreat and ice shelf collapse.",
                     "similarity_score": 0.88,
                 }
             ]
@@ -1662,10 +1664,6 @@ async def results_aggregator_agent(
     all_sources = []
     tool_count = 0
     workflow_details = {}
-    aggregated_output = {
-        "sources": [],
-        "metadata": {},
-    }
 
     for workflow_name, workflow_data in workflow_results.items():
         # Extract retrieval results
@@ -2027,7 +2025,7 @@ async def deduplicate_sources_intelligently(
             continue
 
         # Create content hash (normalize whitespace and case)
-        content_hash = hash(content.lower().replace("\s+", " ")[:200])
+        content_hash = hash(content.lower().replace("\\s+", " ")[:200])
 
         if content_hash not in seen_content_hashes:
             seen_content_hashes.add(content_hash)
@@ -2253,7 +2251,7 @@ Create a well-structured response that directly addresses the query using the pr
                 tool_name = source.get("metadata", {}).get("tool_name", "source")
                 fallback_parts.append(f"[{i + 1}] {tool_name}: {content[:200]}...")
 
-        fallback_response = f"Based on multiple sources:\n\n" + "\n\n".join(
+        fallback_response = "Based on multiple sources:\n\n" + "\n\n".join(
             fallback_parts
         )
 
@@ -2276,7 +2274,7 @@ Create a well-structured response that directly addresses the query using the pr
         retrieval_sources = []
         mcp_data = state.get("mcp_search_results", {})
 
-        for source in sources:
+        for source in deduplicated_sources:
             if source.get("metadata", {}).get("source") == "retrieval":
                 # Use the chunk_text which now contains actual content
                 chunk_text = source.get("chunk_text", "")
@@ -2347,7 +2345,7 @@ Answer the user's question directly and clearly based on all available informati
 
         else:
             # Fallback response when no content available
-            answer = f"I found {len(sources)} relevant source(s) for your query: '{sanitized_query}'. "
+            answer = f"I found {len(deduplicated_sources)} relevant source(s) for your query: '{sanitized_query}'. "
             if confidence_score > 0.7:
                 answer += "I'm fairly confident in these results."
             else:
@@ -2365,7 +2363,7 @@ Answer the user's question directly and clearly based on all available informati
         # Fallback to simple response
         processing_time = (datetime.utcnow() - start_time).total_seconds()
 
-        fallback_response = f"I found {len(sources)} relevant source(s) for your query: '{sanitized_query}'. "
+        fallback_response = f"I found {len(deduplicated_sources)} relevant source(s) for your query: '{sanitized_query}'. "
         if confidence_score > 0.7:
             fallback_response += "I'm fairly confident in these results."
         else:
@@ -2393,7 +2391,6 @@ async def validation_agent(
 
     start_time = datetime.utcnow()
     original_query = state.get("query", "")
-    sanitized_query = state.get("sanitized_query", original_query)
 
     # Get response from response generator
     response_data = state.get("response_data", {})
@@ -2426,34 +2423,6 @@ async def validation_agent(
             source_context.append(f"Source {i + 1} [{tool_name}]: {content[:300]}...")
 
     source_info_text = "\n".join(source_context)
-
-    validation_prompt = f"""
-You are a validation expert assessing the quality of a response to a query.
-
-ORIGINAL QUERY: "{original_query}"
-
-GENERATED RESPONSE: "{final_response[:1000]}"...
-
-SOURCE INFORMATION USED:
-{source_info_text}
-
-VALIDATION CRITERIA:
-1. Query Alignment (0-1): Does the response directly address the query?
-2. Source Accuracy (0-1): Are claims supported by the source information?
-3. Factual Consistency (0-1): Is the information internally consistent?
-4. Completeness (0-1): Does it provide comprehensive coverage?
-
-Return a JSON object with validation scores and feedback:
-{{
-    "query_alignment": 0.0,
-    "source_accuracy": 0.0,
-    "factual_consistency": 0.0,
-    "completeness": 0.0,
-    "overall_score": 0.0,
-    "validation_passed": true,
-    "feedback": "brief explanation"
-}}
-"""
 
     try:
         # Use semantic evaluation with local LLM
@@ -2583,23 +2552,23 @@ def route_after_query_processor(state: DockerMultiAgentRAGState) -> str:
             print(
                 f"🎯 MULTI-PATH: Routing to multi_workflow_coordinator for {len(workflow_tasks)} workflows"
             )
-            logger.info(f"🎯 MULTI-PATH: Routing to multi_workflow_coordinator")
+            logger.info("🎯 MULTI-PATH: Routing to multi_workflow_coordinator")
             return "multi_workflow_coordinator"
 
         # Special routing for time queries - skip retrieval and go directly to MCP research
         if intent_classification.get("primary_intent") == "time_query":
-            print(f"🎯 TIME QUERY: Routing to MCP search agent")
+            print("🎯 TIME QUERY: Routing to MCP search agent")
             logger.info("🎯 TIME QUERY: Routing to MCP search agent")
             return "mcp_search_agent"
 
         # Always run retrieval first as baseline RAG (it's always included in create_agent_tasks)
         if "retrieval" in agent_tasks:
-            print(f"🎯 SINGLE PATH: Routing to retrieval agent")
+            print("🎯 SINGLE PATH: Routing to retrieval agent")
             logger.info("🎯 SINGLE PATH: Routing to retrieval agent")
             return "retrieval_agent"
 
         # Fallback: should not happen since retrieval is always included
-        print(f"⚠️  FALLBACK: No retrieval task found, routing to results aggregator")
+        print("⚠️  FALLBACK: No retrieval task found, routing to results aggregator")
         logger.warning("No retrieval task found, routing to results aggregator")
         return "results_aggregator"
 

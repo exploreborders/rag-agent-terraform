@@ -5,10 +5,10 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Optional
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
+from prometheus_client import CollectorRegistry, Counter
 from starlette_exporter import PrometheusMiddleware, handle_metrics
 
 from app.config import settings
@@ -729,14 +729,14 @@ async def configure_agents(config: dict):
         # Apply configuration updates
         applied_config = {}
 
-        for category, settings in config.items():
+        for category, category_settings in config.items():
             if category not in valid_config_keys:
                 continue
 
             valid_keys = valid_config_keys[category]
             category_config = {}
 
-            for key, value in settings.items():
+            for key, value in category_settings.items():
                 if key in valid_keys:
                     # Here we would typically update global configuration
                     # For now, we'll just validate and acknowledge
@@ -1038,14 +1038,14 @@ async def call_mcp_tool_directly(tool_name: str, parameters: dict) -> dict:
                         time.tzname[0] if time.tzname else "America/New_York"
                     )
                     target_tz = pytz.timezone(local_tz_name)
-                except:
+                except Exception:
                     target_tz = pytz.timezone("America/New_York")  # Fallback
             elif timezone_str == "UTC":
                 target_tz = pytz.UTC
             else:
                 try:
                     target_tz = pytz.timezone(timezone_str)
-                except:
+                except Exception:
                     target_tz = pytz.UTC  # Fallback to UTC
 
             # Convert to target timezone
@@ -1093,7 +1093,6 @@ async def test_mcp_tools(
     """Test MCP Tools with true direct integration - bypassing coordinator service."""
     try:
         import asyncio
-        from concurrent.futures import ThreadPoolExecutor
 
         results = {
             "query": query,

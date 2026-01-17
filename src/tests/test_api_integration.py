@@ -97,10 +97,10 @@ class TestAPIIntegration:
     def test_application_startup_components_available(self):
         """Test that all required startup components are importable."""
         # Test that key components can be imported (basic smoke test)
-        from app.main import app
-        from app.rag_agent import RAGAgent
         from app.graph_persistence import persistence_manager
+        from app.main import app
         from app.mcp_client import mcp_client
+        from app.rag_agent import RAGAgent
 
         assert app is not None
         assert RAGAgent is not None
@@ -109,8 +109,8 @@ class TestAPIIntegration:
 
     def test_application_startup_config_loaded(self):
         """Test that application configuration is loaded correctly."""
-        from app.main import app
         from app.config import settings
+        from app.main import app
 
         # Check that FastAPI app has expected configuration
         assert app.title == "RAG Agent API"

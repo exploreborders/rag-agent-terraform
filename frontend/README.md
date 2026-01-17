@@ -14,7 +14,7 @@ This frontend application provides a user-friendly interface for interacting wit
 - **📊 Results Display**: Expandable source references with metadata
 - **📈 Real-time Monitoring**: Live system health and performance indicators
 - **🎨 Modern UI**: Material-UI components with responsive design
-- **🧪 Comprehensive Testing**: 200+ test cases ensuring reliability
+- **🧪 Testing**: Jest test suite for component and integration testing
 
 ## 🚀 Quick Start
 
@@ -149,10 +149,9 @@ npm test DocumentUpload.test.tsx
 
 ### Test Coverage
 
-- **Components**: 90%+ coverage
-- **Services**: 100% coverage
-- **Error Handling**: Comprehensive edge case testing
-- **User Interactions**: Full workflow coverage
+- **Component Tests**: Individual component functionality
+- **Integration Tests**: Component interactions and API calls
+- **Error Handling**: Edge case and error condition testing
 
 ## 🎨 UI/UX Design
 

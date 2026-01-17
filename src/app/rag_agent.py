@@ -66,19 +66,6 @@ class RAGAgent:
         """Async context manager exit."""
         await self.cleanup()
 
-    async def _ensure_initialized(self):
-        """Ensure the agent is initialized (lazy initialization)."""
-        if not self._initialized:
-            try:
-                # Initialize vector store schema
-                await self.vector_store.initialize_schema()
-                self._initialized = True
-                logger.info("RAG Agent initialized lazily")
-            except Exception as e:
-                logger.warning(f"Lazy initialization failed: {e}")
-                # Don't raise - allow operation to continue without full initialization
-                # This handles cases where database isn't ready yet
-
     async def initialize(self):
         """Initialize all components."""
         if self._initialized:
